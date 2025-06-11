@@ -97,6 +97,20 @@ void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver
         
         if (!targetPlayer) return;
 
+        // NEW: Check if target player is using Tank hack - grant immunity
+        auto* targetPlayerHako = (PlayerActorHakoniwa*)targetPlayer;
+        if (targetPlayerHako && targetPlayerHako->mHackKeeper && 
+            targetPlayerHako->mHackKeeper->currentHackActor) {
+            
+            // Get the name of the current hack
+            const char* hackName = al::getActorName(targetPlayerHako->mHackKeeper->currentHackActor);
+            
+            // Check if the current hack is specifically a Tank
+            if (hackName && strcmp(hackName, "Tank") == 0) {
+                return; // Tank immunity - no damage taken
+            }
+        }
+
             // Get the Hide and Seek mode instance
             HideAndSeekMode* hnsMode = GameModeManager::instance()->getMode<HideAndSeekMode>();
             if (!hnsMode || !mInfo) return;
@@ -176,6 +190,7 @@ void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver
         rs::sendMsgPushToPlayer(receiver, sender);
     }
 }
+
 bool PuppetCapActor::receiveMsg(const al::SensorMsg* msg, al::HitSensor* sender, al::HitSensor* receiver) {
     if (!GameModeManager::hasCappyBounce()) {
         return false;
