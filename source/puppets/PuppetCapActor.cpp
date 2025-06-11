@@ -166,7 +166,6 @@ void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver
             
             return;
         }
-    }
 
     if (!GameModeManager::hasCappyCollision()) {
         return;
