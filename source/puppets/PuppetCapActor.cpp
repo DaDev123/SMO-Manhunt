@@ -78,9 +78,24 @@ void PuppetCapActor::update() {
 void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver) {
 
     if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        al::LiveActor* targetPlayer = nullptr;
+        
+        // Check direct player hit or captured actor hit
         if (al::isSensorPlayer(receiver)) {
-            al::LiveActor* targetPlayer = al::getSensorHost(receiver);
-            if (!targetPlayer) return;
+            targetPlayer = al::getSensorHost(receiver);
+        } else {
+            // Check if this is a captured/hacked actor
+            auto* receiverHost = al::getSensorHost(receiver);
+            auto* player = (PlayerActorHakoniwa*) al::getPlayerActor(receiverHost, 0);
+            
+            if (player && player->mHackKeeper && 
+                player->mHackKeeper->currentHackActor && 
+                player->mHackKeeper->currentHackActor == receiverHost) {
+                targetPlayer = player;
+            }
+        }
+        
+        if (!targetPlayer) return;
 
             // Get the Hide and Seek mode instance
             HideAndSeekMode* hnsMode = GameModeManager::instance()->getMode<HideAndSeekMode>();
@@ -95,6 +110,8 @@ void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver
             if (hnsMode->isPlayerNearOdysseyBarrier(this)) {
                 return; // No damage if cap owner is also near barrier
             }
+
+
 
             // Get target player's position for puppet matching
             sead::Vector3f targetPos = al::getTrans(targetPlayer);
