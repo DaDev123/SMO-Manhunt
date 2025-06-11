@@ -103,7 +103,7 @@ void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver
             targetPlayerHako->mHackKeeper->currentHackActor) {
             
             // Get the name of the current hack
-            const char* hackName = al::getActorName(targetPlayerHako->mHackKeeper->currentHackActor);
+            const char* hackName = targetPlayerHako->mHackKeeper->getCurrentHackName();
             
             // Check if the current hack is specifically a Tank
             if (hackName && strcmp(hackName, "Tank") == 0) {
@@ -190,6 +190,7 @@ void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver
         rs::sendMsgPushToPlayer(receiver, sender);
     }
 }
+
 
 bool PuppetCapActor::receiveMsg(const al::SensorMsg* msg, al::HitSensor* sender, al::HitSensor* receiver) {
     if (!GameModeManager::hasCappyBounce()) {
