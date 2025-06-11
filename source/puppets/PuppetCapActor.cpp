@@ -120,7 +120,7 @@ void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver
             PuppetInfo* targetInfo = nullptr;
             float closestDistSq = 10000.0f; // Start with max distance
             
-            for (size_t i = 0; i < Client::getMaxPlayerCount(); i++) {
+            for (int i = 0; i < Client::getMaxPlayerCount(); i++) {
                 PuppetInfo* puppet = Client::getPuppetInfo(i);
                 if (!puppet || !puppet->isConnected) continue;
 
@@ -177,7 +177,6 @@ void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver
         rs::sendMsgPushToPlayer(receiver, sender);
     }
 }
-
 bool PuppetCapActor::receiveMsg(const al::SensorMsg* msg, al::HitSensor* sender, al::HitSensor* receiver) {
     if (!GameModeManager::hasCappyBounce()) {
         return false;
