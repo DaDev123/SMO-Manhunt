@@ -55,13 +55,13 @@ emu:
 	$(MAKE) all -f MakefileNSO SMOVER=$(SMOVER) BUILDVERSTR=$(BUILDVERSTR) BUILDVER=$(BUILDVER) EMU=1
 	$(MAKE) starlight_patch_$(SMOVER)/*.ips
 
-	mkdir -p starlight_patch_$(SMOVER)/SMOO-Emulator/exefs/
+	mkdir -p starlight_patch_$(SMOVER)/SMOManHunt-Emulator/exefs/
 
-	mv starlight_patch_$(SMOVER)/3CA12DFAAF9C82DA064D1698DF79CDA1.ips starlight_patch_$(SMOVER)/SMOO-Emulator/exefs/3CA12DFAAF9C82DA064D1698DF79CDA1.ips
+	mv starlight_patch_$(SMOVER)/3CA12DFAAF9C82DA064D1698DF79CDA1.ips starlight_patch_$(SMOVER)/SMOManHunt-Emulator/exefs/3CA12DFAAF9C82DA064D1698DF79CDA1.ips
 	mv $(shell basename $(CURDIR))$(SMOVER).elf starlight_patch_$(SMOVER)/subsdk1.elf
-	mv $(shell basename $(CURDIR))$(SMOVER).nso starlight_patch_$(SMOVER)/SMOO-Emulator/exefs/subsdk1
+	mv $(shell basename $(CURDIR))$(SMOVER).nso starlight_patch_$(SMOVER)/SMOManHunt-Emulator/exefs/subsdk1
 
-	cp -R romfs starlight_patch_$(SMOVER)/SMOO-Emulator/
+	cp -R romfs starlight_patch_$(SMOVER)/SMOManHunt-Emulator/
 
 send: all
 	python3 scripts/sendPatch.py $(IP) $(PROJNAME)

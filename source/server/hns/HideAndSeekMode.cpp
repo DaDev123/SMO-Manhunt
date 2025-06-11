@@ -189,13 +189,14 @@ void HideAndSeekMode::update() {
     if (odyssey) {
         if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK) && !isYukimaru) {
             al::tryEmitEffect((al::LiveActor*)odyssey, "Special1WorldHomeGKBarrier", al::getTransPtr((al::LiveActor*)odyssey));
+            al::setEffectParticleScale((al::LiveActor*)odyssey, "Special1WorldHomeGKBarrier", 1.3f);
 
             bool anyHiderClose = false;
             sead::Vector3f odysseyPos = al::getTrans((al::LiveActor*)odyssey);
 
             if (!isPlayerSeeking()) {
                 f32 distance = al::calcDistanceH((al::LiveActor*)playerBase, (al::LiveActor*)odyssey);
-                if (distance < 1600.0f) {
+                if (distance < 2045.0f) {
                     anyHiderClose = true;
                 }
             }
@@ -213,7 +214,7 @@ void HideAndSeekMode::update() {
 
                     if (other->hnsIsHiding()) {
                         f32 distance = vecDistance(other->playerPos, odysseyPos);
-                        if (distance < 1600.0f) {
+                        if (distance < 2045.0f) {
                             anyHiderClose = true;
                             break;
                         }
@@ -276,20 +277,20 @@ void HideAndSeekMode::update() {
         updateTagState(isPlayerHiding());
     }
 
-    bool toggleComboPressed = al::isPadHoldR(-1) && al::isPadTriggerUp(-1);
-    if (toggleComboPressed) {
-        if (!mTicket->mIsActive) {
-            al::startCamera(mCurScene, mTicket, -1);
-            al::requestStopCameraVerticalAbsorb(mCurScene);
-        } else {
-            al::endCamera(mCurScene, mTicket, 0, false);
-            al::requestStopCameraVerticalAbsorb(mCurScene);
-        }
-    }
-
-    if (mTicket->mIsActive) {
-        updateSpectateCam(playerBase);
-    }
+    //bool toggleComboPressed = al::isPadHoldR(-1) && al::isPadTriggerUp(-1);
+// if (toggleComboPressed) {
+//     if (!mTicket->mIsActive) {
+//         al::startCamera(mCurScene, mTicket, -1);
+//         al::requestStopCameraVerticalAbsorb(mCurScene);
+//     } else {
+//         al::endCamera(mCurScene, mTicket, 0, false);
+//         al::requestStopCameraVerticalAbsorb(mCurScene);
+//     }
+// }
+// 
+// if (mTicket->mIsActive) {
+//     updateSpectateCam(playerBase);
+// }
 }
 
 
@@ -361,7 +362,7 @@ bool HideAndSeekMode::isPlayerNearOdysseyBarrier(al::LiveActor* player) {
         if (!isPlayerSeeking()) {
             sead::Vector3f playerPos = al::getTrans(player);
             f32 distance = vecDistance(playerPos, odysseyPos);
-            return distance < 1600.0f;
+            return distance < 2045.0f;
         }
     } else {
         // This is a puppet - need to find their PuppetInfo to check if they're hiding
@@ -375,7 +376,7 @@ bool HideAndSeekMode::isPlayerNearOdysseyBarrier(al::LiveActor* player) {
             // You might need to adjust this comparison based on how you identify puppets
             if (puppetInfo->hnsIsHiding()) {
                 f32 distance = vecDistance(puppetInfo->playerPos, odysseyPos);
-                if (distance < 1600.0f) {
+                if (distance < 2045.0f) {
                     return true;
                 }
             }

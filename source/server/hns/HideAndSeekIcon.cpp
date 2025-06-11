@@ -1,6 +1,7 @@
 #include "server/hns/HideAndSeekIcon.h"
-
+#include "server/Client.hpp"
 #include "server/gamemode/GameModeManager.hpp"
+#include "server/hns/HideAndSeekMode.hpp"
 #include "al/util.hpp"
 
 HideAndSeekIcon::HideAndSeekIcon(const char* name, const al::LayoutInitInfo& initInfo) : al::LayoutActor(name) {
@@ -69,6 +70,19 @@ void HideAndSeekIcon::exeWait() {
     if (!playerList.isEmpty()) {
         al::setPaneStringFormat(this, "TxtPlayerList", playerList.cstr());
     }
+
+    // Show current compass target
+    if (mInfo->mIsPlayerIt) { // Only show for seekers
+        const char* targetName = getCurrentCompassTarget();
+        if (targetName) {
+            al::setPaneStringFormat(this, "TxtTarget", targetName);
+        } else {
+            al::setPaneStringFormat(this, "TxtTarget", "No Target");
+        }
+    } else {
+        // Hide compass target text for hiders
+        al::setPaneStringFormat(this, "TxtTarget", "");
+    }
 }
 
 void HideAndSeekIcon::exeEnd() {
@@ -89,6 +103,65 @@ void HideAndSeekIcon::showHiding() {
 void HideAndSeekIcon::showSeeking() {
     al::hidePane(this, "HidingIcon");
     al::showPane(this, "SeekingIcon");
+}
+
+const char* getCompassTargetName() {
+    // Check if Hide and Seek mode is active
+    if (!GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return nullptr;
+    }
+
+    HideAndSeekMode* hnsMode = GameModeManager::instance()->getMode<HideAndSeekMode>();
+    if (!hnsMode || !hnsMode->isPlayerSeeking()) {
+        return nullptr;
+    }
+
+    // Get list of valid hiders (including those in different stages)
+    PuppetInfo* validHiders[32];
+    int validHiderCount = 0;
+    
+    PuppetHolder* puppetHolder = Client::getPuppetHolder();
+    if (puppetHolder) {
+        for (size_t i = 0; i < (size_t)puppetHolder->getSize() && validHiderCount < 32; i++) {
+            PuppetInfo* puppet = Client::getPuppetInfo(i);
+            if (!puppet || !puppet->isConnected) {
+                continue;
+            }
+            
+            if (puppet->gameMode != GameMode::HIDEANDSEEK && puppet->gameMode != GameMode::LEGACY) {
+                continue;
+            }
+            
+            if (puppet->hnsIsHiding()) {
+                validHiders[validHiderCount] = puppet;
+                validHiderCount++;
+            }
+        }
+    }
+
+    if (validHiderCount == 0) {
+        return nullptr;
+    }
+
+    int maxTargets = validHiderCount; // Removed +1 for "closest" option
+    int currentIndex = compassTargetIndex;
+    
+    // Clamp index
+    if (currentIndex >= maxTargets) {
+        currentIndex = 0;
+    }
+
+    // Point to specific player (no "closest" option)
+    if (currentIndex < validHiderCount && validHiders[currentIndex]) {
+        return validHiders[currentIndex]->puppetName;
+    }
+
+    return nullptr;
+}
+
+const char* HideAndSeekIcon::getCurrentCompassTarget() {
+    // If using the getter function approach from PuppetActor.cpp:
+    return getCompassTargetName(); // This function handles all the logic
 }
 
 namespace {

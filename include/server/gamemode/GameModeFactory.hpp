@@ -16,7 +16,7 @@ GameModeBase* createGameMode(const char* name) {
 
 __attribute((used)) constexpr al::NameToCreator<createMode> modeTable[] = {
     { "Legacy",      nullptr                          },
-    { "HideAndSeek", &createGameMode<HideAndSeekMode> },
+    { "ManHunt", &createGameMode<HideAndSeekMode> },
     { "Sardines",    &createGameMode<SardineMode>     },
     { "FreezeTag",   &createGameMode<FreezeTagMode>   },
     { "Infection",   &createGameMode<InfectionMode>   },
@@ -25,7 +25,7 @@ __attribute((used)) constexpr al::NameToCreator<createMode> modeTable[] = {
 
 constexpr const char* modeNames[] = {
     "Legacy",
-    "Hide & Seek",
+    "ManHunt",
     "Sardines",
     "Freeze-Tag",
     "Infection",

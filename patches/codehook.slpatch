@@ -138,12 +138,12 @@ B59E28 B seadPrintHook  // sead::system::print
 50EB88 ORR w2, wzr, #0x1f // nerve state count
 50EB64 BL speedboot::prepareLayoutInitInfo
 
-
-1F7594 BL compassPlayerDirHook
 43f83c NOP
 
 //Compass
-1F72B4 BL compassVisible
+1F756C BL overwriteCompassNorthDir
+1F7594 BL compassPlayerDirHook
+1F72B4 BL compassAlwaysVisible
 
 // Demo Skips for ManHunt
 
@@ -193,7 +193,6 @@ B59E28 B seadPrintHook  // sead::system::print
 4eef08 MOV W0, #1
 
 
-
 //Multi moons
 550168:
     mov w0, #1
@@ -224,7 +223,7 @@ B59E28 B seadPrintHook  // sead::system::print
     ret
 
 
-// Odyssey Entrance
+// Odyssey Patches
 311b00 NOP
 311b10 NOP
 
@@ -244,3 +243,8 @@ B59E28 B seadPrintHook  // sead::system::print
 4eed9c MOV W0, #1
 4df180 MOV W0, #1
 4dc740 MOV W0, #1
+
+// Cappy Dialog Removal
+0d12f0 NOP
+0d1350 NOP
+54bf1c NOP

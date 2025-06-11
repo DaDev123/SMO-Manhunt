@@ -413,10 +413,27 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
     GameModeManager::instance()->setPaused(stageScene->isPause());
     Client::setStageInfo(stageScene->mHolder);
 
-    Client::update();
-GameDataHolderWriter writer(stageScene->mHolder);
-GameDataFunction::enableCap(writer);
 
+
+        // ManHunt Code
+
+    al::LiveActor* player = nullptr;
+    if (pHolder) {
+        player = pHolder->getPlayer(0);
+    }
+
+    GameDataHolderWriter writer(stageScene->mHolder);
+    GameDataFunction::enableCap(writer);
+    GameDataFunction::talkCapNearHomeInWaterfall(player);
+
+    if (!GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        ShineTowerRocket* odyssey = rs::tryGetShineTowerRocketFromDemoDirector((al::LiveActor*)playerBase);
+        if (odyssey) {
+            al::tryDeleteEffect((al::LiveActor*)odyssey, "Special1WorldHomeGKBarrier");
+        }
+    }
+
+    Client::update();
 
     updatePlayerInfo(stageScene->mHolder, playerBase, isYukimaru);
 
@@ -455,16 +472,13 @@ GameDataFunction::enableCap(writer);
                 }
             }
         }
-    } else if (al::isPadHoldL(-1)) {
+        } else if (al::isPadHoldL(-1)) {
         if (al::isPadTriggerLeft(-1)) { // L + Left => Activate gamemode
             GameModeManager::instance()->toggleActive();
         }
-        if (al::isPadTriggerUp(-1)) { // L + Up => Disable background music
-            isDisableMusic = !isDisableMusic;
-        }
     }
 
-    if (isDisableMusic) {
+    if (Client::isMusicDisabled()) {
         if (al::isPlayingBgm(stageScene)) {
             al::stopAllBgm(stageScene, 0);
         }
@@ -489,6 +503,6 @@ void seadPrintHook(const char* fmt, ...) {
     va_end(args);
 }
 
-bool compassVisible(GameDataHolderAccessor accessor) {
+bool compassAlwaysVisible(GameDataHolderAccessor accessor) {
     return GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK);
 }

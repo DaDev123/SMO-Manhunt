@@ -54,6 +54,7 @@ StageSceneStateServerConfig::StageSceneStateServerConfig(
     mMainMenuOptions->mBuffer[ServerConfigOption::GAMEMODESWITCH].copy(u"Change Gamemode               "); // TBD
     mMainMenuOptions->mBuffer[ServerConfigOption::SETIP].copy(u"Change Server (needs restart)");
     mMainMenuOptions->mBuffer[ServerConfigOption::SETPORT].copy(u"Change Port (needs restart)");
+    mMainMenuOptions->mBuffer[ServerConfigOption::TOGGLEMUSIC].copy(u"Play In-Game Music (OFF)"); // TBD
     mMainMenuOptions->mBuffer[ServerConfigOption::HIDESERVER].copy(u"Hide Server in Debug (OFF)"); // TBD
 
     mMainOptionsList->addStringData(getMainMenuOptions(), "TxtContent");
@@ -183,6 +184,10 @@ void StageSceneStateServerConfig::exeMainMenu() {
                 al::setNerve(this, &nrvStageSceneStateServerConfigOpenKeyboardPort);
                 break;
             }
+            case ServerConfigOption::TOGGLEMUSIC: {
+                al::setNerve(this, &nrvStageSceneStateServerConfigToggleMusic);
+                break;
+            }
             case ServerConfigOption::HIDESERVER: {
                 al::setNerve(this, &nrvStageSceneStateServerConfigHideServer);
                 break;
@@ -236,6 +241,14 @@ void StageSceneStateServerConfig::exeOpenKeyboardPort() {
 void StageSceneStateServerConfig::exeHideServer() {
     if (al::isFirstStep(this)) {
         Client::toggleServerHidden();
+        mainMenuRefresh();
+        al::setNerve(this, &nrvStageSceneStateServerConfigSaveData);
+    }
+}
+
+void StageSceneStateServerConfig::exeToggleMusic() {
+    if (al::isFirstStep(this)) {
+        Client::toggleMusicDisabled();
         mainMenuRefresh();
         al::setNerve(this, &nrvStageSceneStateServerConfigSaveData);
     }
@@ -387,6 +400,12 @@ const sead::WFixedSafeString<0x200>* StageSceneStateServerConfig::getMainMenuOpt
         : u"Hide Server in Debug (OFF)"
     );
 
+        mMainMenuOptions->mBuffer[ServerConfigOption::TOGGLEMUSIC].copy(
+        Client::isMusicDisabled()
+        ? u"Play In-Game Music (OFF)"
+        : u"Play In-Game Music (ON)"
+    );
+
     return mMainMenuOptions->mBuffer;
 }
 
@@ -409,6 +428,7 @@ namespace {
     NERVE_IMPL(StageSceneStateServerConfig, OpenKeyboardIP)
     NERVE_IMPL(StageSceneStateServerConfig, OpenKeyboardPort)
     NERVE_IMPL(StageSceneStateServerConfig, HideServer)
+    NERVE_IMPL(StageSceneStateServerConfig, ToggleMusic)
     NERVE_IMPL(StageSceneStateServerConfig, GamemodeConfig)
     NERVE_IMPL(StageSceneStateServerConfig, GamemodeSelect)
     NERVE_IMPL(StageSceneStateServerConfig, SaveData)

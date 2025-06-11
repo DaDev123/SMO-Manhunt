@@ -7,6 +7,8 @@
 #include "server/hns/HideAndSeekInfo.hpp"
 #include "layouts/LayoutPlayerList.h"
 
+extern int compassTargetIndex;
+
 // TODO: kill layout if going through loading zone or paused
 
 class HideAndSeekIcon : public al::LayoutActor, LayoutPlayerList {
@@ -25,6 +27,8 @@ class HideAndSeekIcon : public al::LayoutActor, LayoutPlayerList {
         void exeWait();
         void exeEnd();
 
+
+        const char* getCurrentCompassTarget();
     protected:
         const char* getRoleIcon(bool isIt) override;
         GameMode getGameMode() override;

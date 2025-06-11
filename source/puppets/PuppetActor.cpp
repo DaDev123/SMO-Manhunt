@@ -272,8 +272,16 @@ void PuppetActor::makeActorDead() {
     al::LiveActor::makeActorDead();
 }
 
-// Add this global variable near your other debug variables
-static int compassTargetIndex = 0; // 0 = closest hider, 1+ = specific player
+bool overwriteCompassNorthDir(sead::Vector3f* out, const al::IUseSceneObjHolder*){
+    
+    auto* curSeq = (HakoniwaSequence*) GameSystemFunction::getGameSystem()->mSequence;
+    al::calcCameraFront(out, curSeq->curScene, 0);
+    out->y = 0;
+    out->normalize();
+    return true;
+}
+
+int compassTargetIndex = 0; // 0 = closest hider, 1+ = specific player
 
 void compassPlayerDirHook(sead::Vector3f* out){
     *out = sead::Vector3f::zero;
@@ -303,94 +311,90 @@ void compassPlayerDirHook(sead::Vector3f* out){
         return;
     }
     
-    // Handle d-pad input for target selection
-    if (al::isPadTriggerRight(-1)) {
-        compassTargetIndex++;
-        if (compassTargetIndex > Client::getMaxPlayerCount()) {
-            compassTargetIndex = 0; // Wrap back to "closest"
+    // Get list of valid hiders (including those in different stages)
+    PuppetInfo* validHiders[32]; // Fixed array instead of std::vector
+    int validHiderCount = 0;
+    
+    PuppetHolder* puppetHolder = Client::getPuppetHolder();
+    if (puppetHolder) {
+        for (size_t i = 0; i < (size_t)puppetHolder->getSize() && validHiderCount < 32; i++) {
+            PuppetInfo* puppet = Client::getPuppetInfo(i);
+            if (!puppet || !puppet->isConnected) {
+                continue;
+            }
+            
+            // Skip if not in HNS mode or legacy mode
+            if (puppet->gameMode != GameMode::HIDEANDSEEK && puppet->gameMode != GameMode::LEGACY) {
+                continue;
+            }
+            
+            // Check if this puppet is a hider (don't check stage requirement)
+            if (puppet->hnsIsHiding()) {
+                validHiders[validHiderCount] = puppet;
+                validHiderCount++;
+            }
         }
     }
+    
+    int maxTargets = validHiderCount; // Removed +1 for "closest" option
+    
+    if (maxTargets == 0) {
+        return; // No valid targets
+    }
+    
+    // Handle d-pad input for target selection
     if (al::isPadTriggerLeft(-1)) {
         compassTargetIndex--;
         if (compassTargetIndex < 0) {
-            compassTargetIndex = Client::getMaxPlayerCount(); // Wrap to last player
+            compassTargetIndex = maxTargets - 1;
         }
+    } else if (al::isPadTriggerRight(-1)) {
+        compassTargetIndex++;
+        if (compassTargetIndex >= maxTargets) {
+            compassTargetIndex = 0;
+        }
+    }
+    
+    // Clamp target index if number of players changed
+    if (compassTargetIndex >= maxTargets) {
+        compassTargetIndex = 0;
     }
     
     sead::Vector3f playerPos = al::getTrans(playerBase);
     sead::Vector3f targetPos = sead::Vector3f::zero;
     bool foundTarget = false;
+    bool targetInSameStage = false;
     
-    if (compassTargetIndex == 0) {
-        // Mode 0: Point to closest hider (original behavior)
-        float closestDistance = FLT_MAX;
-        
-        PuppetHolder* puppetHolder = Client::getPuppetHolder();
-        if (puppetHolder) {
-            for (size_t i = 0; i < (size_t)puppetHolder->getSize(); i++) {
-                PuppetInfo* puppet = Client::getPuppetInfo(i);
-                if (!puppet || !puppet->isConnected || !puppet->isInSameStage) {
-                    continue;
-                }
-                
-                // Skip if not in HNS mode or legacy mode
-                if (puppet->gameMode != GameMode::HIDEANDSEEK && puppet->gameMode != GameMode::LEGACY) {
-                    continue;
-                }
-                
-                // Check if this puppet is a hider
-                if (puppet->hnsIsHiding()) {
-                    float distance = vecDistance(puppet->playerPos, playerPos);
-                    if (distance < closestDistance) {
-                        closestDistance = distance;
-                        targetPos = puppet->playerPos;
-                        foundTarget = true;
-                    }
-                }
-            }
-        }
-    } else {
-        // Mode 1+: Point to specific player by index
-        int targetPlayerIndex = compassTargetIndex - 1; // Convert to 0-based index
-        
-        PuppetHolder* puppetHolder = Client::getPuppetHolder();
-        if (puppetHolder && targetPlayerIndex < puppetHolder->getSize()) {
-            PuppetInfo* targetPuppet = Client::getPuppetInfo(targetPlayerIndex);
-            if (targetPuppet && targetPuppet->isConnected && targetPuppet->isInSameStage) {
-                // Skip if not in HNS mode or legacy mode
-                if (targetPuppet->gameMode == GameMode::HIDEANDSEEK || targetPuppet->gameMode == GameMode::LEGACY) {
-                    // Point to this player regardless of whether they're hiding or seeking
-                    targetPos = targetPuppet->playerPos;
-                    foundTarget = true;
-                }
-            }
-        }
+    // Point to specific player
+    if (compassTargetIndex < validHiderCount) {
+        PuppetInfo* targetPuppet = validHiders[compassTargetIndex];
+        targetPos = targetPuppet->playerPos;
+        targetInSameStage = targetPuppet->isInSameStage;
+        foundTarget = true;
     }
     
     if (foundTarget) {
-        // Calculate direction to target
         sead::Vector3f direction = targetPos - playerPos;
-        direction.y = 0; // Keep it horizontal
+        direction.y = 0; // Keep compass horizontal
         
-        // Normalize the direction
-        float length = sqrtf(direction.x * direction.x + direction.z * direction.z);
-        if (length > 0.001f) {
-            direction.x /= length;
-            direction.z /= length;
+        if (targetInSameStage) {
+            // Normal compass behavior when target is in same stage
+            direction.normalize();
+            *out = direction;
+        } else {
+            // Spinning compass when target is in different stage
+            static float spinTime = 0.0f;
+            spinTime += Time::deltaTime * 10.0f; // Adjust spin speed as needed
+            
+            // Create a spinning vector
+            float angle = spinTime;
+            sead::Vector3f spinDirection;
+            spinDirection.x = cosf(angle);
+            spinDirection.y = 0.0f;
+            spinDirection.z = sinf(angle);
+            
+            *out = spinDirection;
         }
-        
-        *out = direction;
-        
-        // Debug output (optional)
-        // printf("Compass target mode: %d, pointing to: (%.2f, %.2f, %.2f)\n", 
-        //        compassTargetIndex, targetPos.x, targetPos.y, targetPos.z);
-    } else {
-        // No valid target found - spin compass
-        static float spinTime = 0.0f;
-        spinTime += 0.15f;
-        
-        float angle = spinTime;
-        *out = sead::Vector3f(sinf(angle), 0, cosf(angle));
     }
 }
 
