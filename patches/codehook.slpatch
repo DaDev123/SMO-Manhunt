@@ -248,3 +248,6 @@ B59E28 B seadPrintHook  // sead::system::print
 0d12f0 NOP
 0d1350 NOP
 54bf1c NOP
+
+//Remove boss barriers from bowser's
+009F7C BL barrierAppearHook
