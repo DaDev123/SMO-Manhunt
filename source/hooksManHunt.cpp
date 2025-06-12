@@ -1,6 +1,8 @@
 #include <cmath>
 #include <math.h>
 
+#include "main.hpp"
+
 #include "al/execute/ExecuteOrder.h"
 #include "al/execute/ExecuteTable.h"
 #include "al/execute/ExecuteTableHolderDraw.h"
