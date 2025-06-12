@@ -529,3 +529,11 @@ void barrierAppearHook(al::LiveActor* thisPtr, const char* actionName) {
 bool compassAlwaysVisible(GameDataHolderAccessor accessor) {
     return GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK);
 }
+
+bool moonCutscene() {
+    return GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK);
+}
+
+bool moonCutsceneNOP() {
+    return GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK);
+}
