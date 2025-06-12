@@ -23,11 +23,13 @@ class PuppetCapActor : public al::LiveActor {
         void initOnline(PuppetInfo* info);
         void startAction(const char* actName);
         void update();
-        
+
         // Getter method for accessing puppet info
         PuppetInfo* getInfo() const { return mInfo; }
         void setOwnerUserID(const nn::account::Uid& userID) { mUserID = userID; }
         const nn::account::Uid& getOwnerUserID() const { return mUserID; }
+
+        static int sInvincibilityFromPunchAnim;
 
     private:
         HackCapJointControlKeeper* mJointKeeper;
