@@ -155,34 +155,35 @@ B59E28 B seadPrintHook  // sead::system::print
 25ffac MOV X0, #0
 
 // shine demo
-1D18F0 BL moonCutsceneNOP1
-1D1934 BL moonCutsceneNOP2
-4DBC20 BL moonCutsceneNOP3
-4DBF08 BL moonCutsceneNOP4
-4DBF14 BL moonCutsceneNOP5
-4DBF54 BL moonCutscene1
-4DBF60 BL moonCutscene2
-4DC1D4 BL moonCutsceneNOP6
-4DC578 BL moonCutscene3
-4DC584 BL moonCutscene4
-4DC66C BL moonCutscene5
-4DC8B0 BL moonCutscene6
-4DCA64 BL moonCutscene7
-4DCA9C BL moonCutscene8
+1D18F0 BL moonCutsceneNOP
+1D1934 BL moonCutsceneNOP
+4DBC20 BL moonCutsceneNOP
+4DBF08 BL moonCutsceneNOP
+4DBF14 BL moonCutsceneNOP
+4DBF54 BL moonCutscene
+4DBF60 BL moonCutscene
+4DC1D4 BL moonCutsceneNOP
+4DC578 BL moonCutscene
+4DC584 BL moonCutscene
+4DC66C BL moonCutscene
+4DC8B0 BL moonCutscene
+4DCA64 BL moonCutscene
+4DCA9C BL moonCutscene
 
-4DE2F8 BL moonCutscene9
-4DE6AC BL moonCutscene10
-4DE710 BL moonCutscene11
-4DE974 BL moonCutscene12
-4DE984 BL moonCutscene13
-4DE9F8 BL moonCutscene14
-4DEA48 BL moonCutsceneNOP7
-4DEA70 BL moonCutscene15
-4DEB30 BL moonCutscene16
+4DE2F8 BL moonCutscene
+4DE6AC BL moonCutscene
+4DE710 BL moonCutscene
+4DE974 BL moonCutscene
+4DE984 BL moonCutscene
+4DE9F8 BL moonCutscene
+4DEA48 BL moonCutsceneNOP
+4DEA70 BL moonCutscene
+4DEB30 BL moonCutscene
 
-4DED44 BL moonCutscene17
-4DED80 BL moonCutscene18
-4DED90 BL moonCutscene19
+4DED44 BL moonCutscene
+
+4DED80 BL moonCutscene
+4DED90 BL moonCutscene
 
 
 //Else
@@ -256,31 +257,31 @@ B59E28 B seadPrintHook  // sead::system::print
 
 
 
-1D18F0 BL originalCutsceneNOP1
-1D1934 BL originalCutsceneNOP2
-4DBC20 BL originalCutsceneNOP3
-4DBF08 BL originalCutsceneNOP4
-4DBF14 BL originalCutsceneNOP5
-4DBF54 BL originalCutscene1
-4DBF60 BL originalCutscene2
-4DC1D4 BL originalCutsceneNOP6
-4DC578 BL originalCutscene3
-4DC584 BL originalCutscene4
-4DC66C BL originalCutscene5
-4DC8B0 BL originalCutscene6
-4DCA64 BL originalCutscene7
-4DCA9C BL originalCutscene8
+1D18F0 BL originalCutsceneNOP
+1D1934 BL originalCutsceneNOP
+4DBC20 BL originalCutsceneNOP
+4DBF08 BL originalCutsceneNOP
+4DBF14 BL originalCutsceneNOP
+4DBF54 BL originalCutscene
+4DBF60 BL originalCutscene
+4DC1D4 BL originalCutsceneNOP
+4DC578 BL originalCutscene
+4DC584 BL originalCutscene
+4DC66C BL originalCutscene
+4DC8B0 BL originalCutscene
+4DCA64 BL originalCutscene
+4DCA9C BL originalCutscene
 
-4DE2F8 BL originalCutscene9
-4DE6AC BL originalCutscene10
-4DE710 BL originalCutscene11
-4DE974 BL originalCutscene12
-4DE984 BL originalCutscene13
-4DE9F8 BL originalCutscene14
-4DEA48 BL originalCutsceneNOP7
-4DEA70 BL originalCutscene15
-4DEB30 BL originalCutscene16
+4DE2F8 BL originalCutscene
+4DE6AC BL originalCutscene
+4DE710 BL originalCutscene
+4DE974 BL originalCutscene
+4DE984 BL originalCutscene
+4DE9F8 BL originalCutscene
+4DEA48 BL originalCutsceneNOP
+4DEA70 BL originalCutscene
+4DEB30 BL originalCutscene
 
-4DED44 BL originalCutscene17
-4DED80 BL originalCutscene18
-4DED90 BL originalCutscene19
+4DED44 BL originalCutscene
+4DED80 BL originalCutscene
+4DED90 BL originalCutscene
