@@ -42,6 +42,9 @@ namespace speedboot {
             sead::Vector2f mFreezeBorder       = { 700.f, 420.f };
             sead::Vector2f mFreezeBorderTarget = { 700.f, 420.f };
 
+            float mLoadingPaneTransXTarget = 1000.f;  // Start off-screen like freeze logo
+            float mLoadingPaneTransX = 1000.f;        // Start off-screen like freeze logo
+
             // Backgrounds
             float mFreezeBGTransX       = 0.f;
             float mFreezeBGTransXTarget = 0.f;

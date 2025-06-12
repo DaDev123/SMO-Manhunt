@@ -49,6 +49,19 @@ namespace speedboot {
 
         float rotation = cosf(mTime) * 3;
 
+        // Animate loading dots (cycle every 1.2 seconds)
+        float dotCycle = fmodf(mTime, 1.2f);
+        
+        if (dotCycle < 0.3f) {
+            al::setPaneString(this, "LoadingPane", u"Loading", 0);
+        } else if (dotCycle < 0.6f) {
+            al::setPaneString(this, "LoadingPane", u"Loading.", 0);
+        } else if (dotCycle < 0.9f) {
+            al::setPaneString(this, "LoadingPane", u"Loading..", 0);
+        } else {
+            al::setPaneString(this, "LoadingPane", u"Loading...", 0);
+        }
+
         // Debug stuff
         sead::WFormatFixedSafeString<0x40> string(u"Time: %.02f\nSine Value: %.02f", mTime, rotation);
         al::setPaneString(this, "TxtDebug", string.cstr(), 0);
@@ -63,7 +76,7 @@ namespace speedboot {
                 mOnlineLogoScaleTarget   = 1.f;
                 mOnlineCreditScaleTarget = 1.f;
 
-                mFreezeLogoTransXTarget = 1000.f;
+                mLoadingPaneTransXTarget = 1000.f;  // Loading text off-screen (same as freeze logo initial)
 
                 mFreezeBorderTarget = sead::Vector2f(700.f, 420.f);
 
@@ -73,7 +86,7 @@ namespace speedboot {
                 mOnlineLogoScaleTarget   = 0.3f;
                 mOnlineCreditScaleTarget = 0.f;
 
-                mFreezeLogoTransXTarget = 0.f;
+                mLoadingPaneTransXTarget = 0.f;  // Loading text centered (same as freeze logo final)
 
                 mFreezeBorderTarget = sead::Vector2f(640.f, 360.f);
 
@@ -89,10 +102,9 @@ namespace speedboot {
             al::setPaneLocalScale(this, "PartOnlineLogo",      { mOnlineLogoScale,   mOnlineLogoScale   });
             al::setPaneLocalScale(this, "PicCraftyBossCredit", { mOnlineCreditScale, mOnlineCreditScale });
 
-            // Freeze-Tag logo
-            mFreezeLogoTransX = al::lerpValue(mFreezeLogoTransX, mFreezeLogoTransXTarget, 0.04f);
-            al::setPaneLocalTrans(this, "FreezeLogoRoot", { mFreezeLogoTransX, 0.f });
-            al::setPaneLocalRotate(this, "PicFreezeLogo", { 0.f, 0.f, rotation });
+            // Loading text (replaces Freeze-Tag logo with same animation)
+            mLoadingPaneTransX = al::lerpValue(mLoadingPaneTransX, mLoadingPaneTransXTarget, 0.04f);
+            al::setPaneLocalTrans(this, "LoadingPane", sead::Vector2f(mLoadingPaneTransX, 0.f));
 
             // Freeze borders
             mFreezeBorder.x = al::lerpValue(mFreezeBorder.x, mFreezeBorderTarget.x, 0.02f);

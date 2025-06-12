@@ -29,7 +29,8 @@ class PuppetCapActor : public al::LiveActor {
         void setOwnerUserID(const nn::account::Uid& userID) { mUserID = userID; }
         const nn::account::Uid& getOwnerUserID() const { return mUserID; }
 
-        static int sInvincibilityFromPunchAnim;
+        float mInvincibilityTimer = 0.0f;  // in seconds
+        sead::SafeString mCurrentInvincibleAnim; // track which anim triggered invincibility
 
     private:
         HackCapJointControlKeeper* mJointKeeper;

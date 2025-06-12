@@ -5,7 +5,6 @@
 #include "al/util/SensorUtil.h"
 
 #include "game/Player/PlayerFunction.h"
-#include "game/Player/PlayerActorHakoniwa.h"
 
 #include "rs/util/SensorUtil.h"
 
@@ -13,7 +12,7 @@
 
 #include "server/gamemode/GameModeManager.hpp"
 
-#include "server/hns/HideAndSeekMode.hpp"  
+#include "server/manhunt/ManHuntMode.hpp"  
 #include "server/Client.hpp"
 
 PuppetCapActor::PuppetCapActor(const char* name) : al::LiveActor(name) {}
@@ -78,7 +77,7 @@ void PuppetCapActor::update() {
 
 void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver) {
 
-    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT)) {
         al::LiveActor* targetPlayer = nullptr;
         
         // Check direct player hit or captured actor hit
@@ -112,25 +111,17 @@ void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver
             }
         }
 
-        // NEW: Check if target player is performing KoopaCapPunch animation - grant immunity
-        if (targetPlayerHako && targetPlayerHako->mPlayerAnimator) {
-            const char* curPlayerAnim = targetPlayerHako->mPlayerAnimator->curAnim.cstr();
-            if (curPlayerAnim && al::isEqualSubString(curPlayerAnim, "KoopaCapPunch")) {
-                return; // KoopaCapPunch immunity - no damage taken
-            }
-        }
-
-            // Get the Hide and Seek mode instance
-            HideAndSeekMode* hnsMode = GameModeManager::instance()->getMode<HideAndSeekMode>();
-            if (!hnsMode || !mInfo) return;
+            // Get the ManHunt mode instance
+            ManHuntMode* manhuntMode = GameModeManager::instance()->getMode<ManHuntMode>();
+            if (!manhuntMode || !mInfo) return;
 
             // CRITICAL: Check barrier protection first, before any role checks
-            if (hnsMode->isPlayerNearOdysseyBarrier(targetPlayer)) {
+            if (manhuntMode->isPlayerNearOdysseyBarrier(targetPlayer)) {
                 return; // Absolute protection - no damage allowed when near barrier
             }
 
             // Also check if the cap OWNER is near barrier (in case barrier affects both players)
-            if (hnsMode->isPlayerNearOdysseyBarrier(this)) {
+            if (manhuntMode->isPlayerNearOdysseyBarrier(this)) {
                 return; // No damage if cap owner is also near barrier
             }
 
@@ -165,25 +156,25 @@ void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver
             
             if (!targetInfo) {
                 // Target is likely the main player - get role from mode
-                targetIsHiding = hnsMode->isPlayerHiding();
-                targetIsSeeking = hnsMode->isPlayerSeeking();
+                targetIsHiding = manhuntMode->isPlayerRunning();
+                targetIsSeeking = manhuntMode->isPlayerHunting();
             } else {
                 // Target is a puppet - get role from PuppetInfo
-                targetIsHiding = targetInfo->hnsIsHiding();
-                targetIsSeeking = targetInfo->hnsIsSeeking();
+                targetIsHiding = targetInfo->manhuntIsRunning();
+                targetIsSeeking = targetInfo->manhuntIsHunting();
             }
 
             // Only allow damage if roles are opposite AND neither is near barrier
             bool canDealDamage = false;
             
-            if (mInfo->hnsIsSeeking() && targetIsHiding) {
+            if (mInfo->manhuntIsHunting() && targetIsHiding) {
                 canDealDamage = true;
-            } else if (mInfo->hnsIsHiding() && targetIsSeeking) {
+            } else if (mInfo->manhuntIsRunning() && targetIsSeeking) {
                 canDealDamage = true;
             }
 
             // Final barrier check before dealing damage (double safety)
-            if (canDealDamage && !hnsMode->isPlayerNearOdysseyBarrier(targetPlayer)) {
+            if (canDealDamage && !manhuntMode->isPlayerNearOdysseyBarrier(targetPlayer)) {
                 al::sendMsgEnemyAttack(receiver, sender);
             }
             

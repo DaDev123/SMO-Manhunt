@@ -16,7 +16,7 @@
 #include "sead/heap/seadHeapMgr.h"
 
 #include "server/gamemode/GameModeManager.hpp"
-#include "server/hns/HideAndSeekMode.hpp"
+#include "server/manhunt/ManHuntMode.hpp"
 
 SEAD_SINGLETON_DISPOSER_IMPL(Client)
 

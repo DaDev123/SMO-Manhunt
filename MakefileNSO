@@ -37,10 +37,7 @@ SOURCES		:=  \
 			source/sead  \
 			source/puppets  \
 			source/speedboot  \
-			source/server/hns  \
-			source/server/infection  \
-			source/server/sardines  \
-			source/server/freeze-tag  \
+			source/server/manhunt  \
 			source/server/gamemode  \
 			source/server/gamemode/modifiers  \
 			source/server  \

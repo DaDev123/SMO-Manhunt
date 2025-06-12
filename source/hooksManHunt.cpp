@@ -52,7 +52,7 @@ void stageSceneHook() {
     GameDataFunction::enableCap(writer);
     GameDataFunction::talkCapNearHomeInWaterfall(player);
 
-    if (!GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+    if (!GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT)) {
         ShineTowerRocket* odyssey = rs::tryGetShineTowerRocketFromDemoDirector((al::LiveActor*)playerBase);
         if (odyssey) {
             al::tryDeleteEffect((al::LiveActor*)odyssey, "Special1WorldHomeGKBarrier");
@@ -72,8 +72,8 @@ namespace al {
 }
 
 void barrierAppearHook(al::LiveActor* thisPtr, const char* actionName) {
-    if (!GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
-        return; // Disable functionality if not in HIDEANDSEEK mode
+    if (!GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT)) {
+        return; // Disable functionality if not in MANHUNT mode
     }
 
     if (al::isEqualString(GameDataFunction::getCurrentStageName(thisPtr), "SkyWorldHomeStage") && 
@@ -87,5 +87,5 @@ void barrierAppearHook(al::LiveActor* thisPtr, const char* actionName) {
 
 
 bool compassAlwaysVisible(GameDataHolderAccessor accessor) {
-    return GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK);
+    return GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT);
 }

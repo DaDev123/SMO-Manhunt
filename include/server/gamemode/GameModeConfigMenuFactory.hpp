@@ -1,10 +1,7 @@
 #pragma once
 
 #include "al/factory/Factory.h"
-#include "server/hns/HideAndSeekConfigMenu.hpp"
-#include "server/sardines/SardineConfigMenu.hpp"
-#include "server/freeze-tag/FreezeTagConfigMenu.hpp"
-#include "server/infection/InfectionConfigMenu.hpp"
+#include "server/manhunt/ManHuntConfigMenu.hpp"
 #include "server/gamemode/GameModeConfigMenu.hpp"
 
 typedef GameModeConfigMenu* (*createMenu)(const char* name);
@@ -15,10 +12,7 @@ GameModeConfigMenu* createGameModeConfigMenu(const char* name) {
 };
 
 __attribute((used)) constexpr al::NameToCreator<createMenu> menuTable[] = {
-    { "ManHunt", &createGameModeConfigMenu<HideAndSeekConfigMenu> },
-    { "Sardine",     &createGameModeConfigMenu<SardineConfigMenu>     },
-    { "FreezeTag",   &createGameModeConfigMenu<FreezeTagConfigMenu>   },
-    { "Infection",   &createGameModeConfigMenu<InfectionConfigMenu>   },
+    { "ManHunt",     &createGameModeConfigMenu<ManHuntConfigMenu>     },
 };
 
 class GameModeConfigMenuFactory : public al::Factory<createMenu> {

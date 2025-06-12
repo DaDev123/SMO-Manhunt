@@ -57,29 +57,7 @@ struct PuppetInfo {
     u8   seconds = 0;
     u16  minutes = 0;
 
-    // Hide and Seek
-    inline bool hnsIsSeeking() const { return  isIt; }
-    inline bool hnsIsHiding()  const { return !isIt; }
-    // Sardines
-    inline bool snhIsPack()    const { return  isIt; }
-    inline bool snhIsAlone()   const { return !isIt; }
-    // Infection
-    inline bool infectionIsInfected() const { return  isIt; }
-    inline bool infectionIsRunning()  const { return !isIt; }
-
-
-    // Freeze Tag Gamemode Info
-    uint16_t freezeTagScore       = 0;
-    bool     isFreezeInRound      = false;
-    bool     isFreezeTagRunner    = true;
-    bool     isFreezeTagFreeze    = false;
-    bool     isFreezeTagFallenOff = false; // When runner falls off and is automatically frozen, this flag is set
-    float    freezeIconSize       = 0.f;
-
-    inline uint16_t ftGetScore()     const { return  freezeTagScore;       }
-    inline bool     ftIsRunner()     const { return  isFreezeTagRunner;    }
-    inline bool     ftIsChaser()     const { return !isFreezeTagRunner;    }
-    inline bool     ftIsFrozen()     const { return  isFreezeTagFreeze;    }
-    inline bool     ftIsUnfrozen()   const { return !isFreezeTagFreeze;    }
-    inline bool     ftHasFallenOff() const { return  isFreezeTagFallenOff; }
+    // ManHunt
+    inline bool manhuntIsHunting() const { return  isIt; }
+    inline bool manhuntIsRunning()  const { return !isIt; }
 };

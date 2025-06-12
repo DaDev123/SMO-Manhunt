@@ -28,7 +28,7 @@ GameModeManager::GameModeManager() {
         sead::Heap::HeapDirection::cHeapDirection_Reverse,
         false
     );
-    setMode(GameMode::HIDEANDSEEK); // set default gamemode
+    setMode(GameMode::MANHUNT); // set default gamemode
 }
 
 void GameModeManager::processModePacket(Packet* _packet) {
