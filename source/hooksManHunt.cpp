@@ -35,22 +35,6 @@
 #include "server/gamemode/GameModeManager.hpp"
 
 #include "rs/util.hpp"
-
-
-bool manhuntSequenceHook(HakoniwaSequence* sequence) {
-    StageScene* stageScene = (StageScene*)sequence->curScene;
-
-    al::PlayerHolder* pHolder    = al::getScenePlayerHolder(stageScene);
-    PlayerActorBase*  playerBase = al::tryGetPlayerActor(pHolder, 0);
-
-    if (!GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
-        ShineTowerRocket* odyssey = rs::tryGetShineTowerRocketFromDemoDirector((al::LiveActor*)playerBase);
-        if (odyssey) {
-            al::tryDeleteEffect((al::LiveActor*)odyssey, "Special1WorldHomeGKBarrier");
-        }
-    }
-}
-
 // ManHunt bool and stuff
 
 namespace al {
