@@ -5,6 +5,7 @@
 #include "al/util/SensorUtil.h"
 
 #include "game/Player/PlayerFunction.h"
+#include "game/Player/PlayerActorHakoniwa.h"
 
 #include "rs/util/SensorUtil.h"
 
@@ -108,6 +109,14 @@ void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver
             // Check if the current hack is specifically a Tank
             if (hackName && strcmp(hackName, "Tank") == 0) {
                 return; // Tank immunity - no damage taken
+            }
+        }
+
+        // NEW: Check if target player is performing KoopaCapPunch animation - grant immunity
+        if (targetPlayerHako && targetPlayerHako->mPlayerAnimator) {
+            const char* curPlayerAnim = targetPlayerHako->mPlayerAnimator->curAnim.cstr();
+            if (curPlayerAnim && al::isEqualSubString(curPlayerAnim, "KoopaCapPunch")) {
+                return; // KoopaCapPunch immunity - no damage taken
             }
         }
 
