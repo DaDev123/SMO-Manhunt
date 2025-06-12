@@ -38,12 +38,14 @@
 
 #include "rs/util.hpp"
 
-bool manhuntSequenceHook(HakoniwaSequence *sequence) {
-    auto *stageScene = (StageScene*)sequence->curScene;
-    isInGame = !stageScene->isPause();
+void stageSceneHook() {
+    StageScene *stageScene;
+    __asm("MOV %[result], X0" : [result] "=r"(stageScene));
+    isInGame = true;
 
-    al::PlayerHolder* pHolder    = al::getScenePlayerHolder(stageScene);
-    PlayerActorBase*  playerBase = al::tryGetPlayerActor(pHolder, 0);
+    auto *pHolder = al::getScenePlayerHolder(stageScene);
+    auto *player = (PlayerActorHakoniwa*)al::tryGetPlayerActor(pHolder, 0);
+    if (!player) return;
 
     if (!GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
         ShineTowerRocket* odyssey = rs::tryGetShineTowerRocketFromDemoDirector((al::LiveActor*)playerBase);
@@ -51,8 +53,8 @@ bool manhuntSequenceHook(HakoniwaSequence *sequence) {
             al::tryDeleteEffect((al::LiveActor*)odyssey, "Special1WorldHomeGKBarrier");
         }
     }
-    
-    return al::isFirstStep(sequence);
+
+
 }
 
 
