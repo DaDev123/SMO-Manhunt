@@ -534,13 +534,25 @@ void moonCutsceneNOP() {
     if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
         return; // NOP when in HIDEANDSEEK mode
     }
-    return originalCutsceneNOP();
+    return;
+}
+
+// Declare function pointer to store original address
+int (*originalCutsceneFunc)(void) = nullptr;
+
+// Before applying patches, store the original function address
+void initPatches() {
+    // Store original function at one of the addresses you're patching
+    // For example, if 4DBF54 originally pointed to some function:
+    originalCutsceneFunc = (int(*)(void))0x[original_function_address];
+    
+    // Then apply your patches...
 }
 
 int moonCutscene() {
     if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
-        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+        return 1; // Skip cutscene in HIDEANDSEEK mode
     }
-    // Call original function when NOT in HideAndSeek mode
-    return originalCutscene(); // call original function
+    // Call the original function when not in HIDEANDSEEK
+    return originalCutsceneFunc();
 }
