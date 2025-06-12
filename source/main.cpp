@@ -413,13 +413,6 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
     GameModeManager::instance()->setPaused(stageScene->isPause());
     Client::setStageInfo(stageScene->mHolder);
 
-    bool isYukimaru = !playerBase->getPlayerInfo();
-
-    isInGame = !stageScene->isPause();
-
-    GameModeManager::instance()->setPaused(stageScene->isPause());
-    Client::setStageInfo(stageScene->mHolder);
-
     al::LiveActor* player = nullptr;
     if (pHolder) {
         player = pHolder->getPlayer(0);
