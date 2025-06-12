@@ -253,3 +253,34 @@ B59E28 B seadPrintHook  // sead::system::print
 
 //Remove boss barriers from bowser's
 009F7C BL barrierAppearHook
+
+
+
+1D18F0 BL originalCutsceneNOP1
+1D1934 BL originalCutsceneNOP2
+4DBC20 BL originalCutsceneNOP3
+4DBF08 BL originalCutsceneNOP4
+4DBF14 BL originalCutsceneNOP5
+4DBF54 BL originalCutscene1
+4DBF60 BL originalCutscene2
+4DC1D4 BL originalCutsceneNOP6
+4DC578 BL originalCutscene3
+4DC584 BL originalCutscene4
+4DC66C BL originalCutscene5
+4DC8B0 BL originalCutscene6
+4DCA64 BL originalCutscene7
+4DCA9C BL originalCutscene8
+
+4DE2F8 BL originalCutscene9
+4DE6AC BL originalCutscene10
+4DE710 BL originalCutscene11
+4DE974 BL originalCutscene12
+4DE984 BL originalCutscene13
+4DE9F8 BL originalCutscene14
+4DEA48 BL originalCutsceneNOP7
+4DEA70 BL originalCutscene15
+4DEB30 BL originalCutscene16
+
+4DED44 BL originalCutscene17
+4DED80 BL originalCutscene18
+4DED90 BL originalCutscene19
