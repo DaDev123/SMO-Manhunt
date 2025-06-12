@@ -45,6 +45,7 @@ void stageSceneHook() {
 
     auto *pHolder = al::getScenePlayerHolder(stageScene);
     auto *player = (PlayerActorHakoniwa*)al::tryGetPlayerActor(pHolder, 0);
+    PlayerActorBase*  playerBase = al::tryGetPlayerActor(pHolder, 0);
     if (!player) return;
 
     if (!GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
