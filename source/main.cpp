@@ -400,20 +400,27 @@ bool threadInit(HakoniwaSequence* mainSeq) { // hook for initializing client cla
 
 bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
     StageScene* stageScene = (StageScene*)sequence->curScene;
+    
+    if (!stageScene || !stageScene->mHolder) return false;
 
     bool isFirstStep = al::isFirstStep(sequence);
 
-    al::PlayerHolder* pHolder    = al::getScenePlayerHolder(stageScene);
-    PlayerActorBase*  playerBase = al::tryGetPlayerActor(pHolder, 0);
+    al::PlayerHolder* pHolder = al::getScenePlayerHolder(stageScene);
+    if (!pHolder) return false;
 
-    al::LiveActor* player = nullptr;
-    if (pHolder) {
-        player = pHolder->getPlayer(0);
-    }
+    PlayerActorBase* playerBase = al::tryGetPlayerActor(pHolder, 0);
+    if (!playerBase) return false; // Add this check
+    
+    al::LiveActor* player = pHolder->getPlayer(0);
+    if (!player) return false;
 
     GameDataHolderWriter writer(stageScene->mHolder);
     GameDataFunction::enableCap(writer);
-    GameDataFunction::talkCapNearHomeInWaterfall(player);
+    
+    // Consider making this conditional
+    if (isFirstStep) {
+        GameDataFunction::talkCapNearHomeInWaterfall(player);
+    }
 
 
     bool isYukimaru = !playerBase->getPlayerInfo();
