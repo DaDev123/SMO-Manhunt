@@ -413,26 +413,6 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
     GameModeManager::instance()->setPaused(stageScene->isPause());
     Client::setStageInfo(stageScene->mHolder);
 
-
-
-        // ManHunt Code
-
-    al::LiveActor* player = nullptr;
-    if (pHolder) {
-        player = pHolder->getPlayer(0);
-    }
-
-    GameDataHolderWriter writer(stageScene->mHolder);
-    GameDataFunction::enableCap(writer);
-    GameDataFunction::talkCapNearHomeInWaterfall(player);
-
-    if (!GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
-        ShineTowerRocket* odyssey = rs::tryGetShineTowerRocketFromDemoDirector((al::LiveActor*)playerBase);
-        if (odyssey) {
-            al::tryDeleteEffect((al::LiveActor*)odyssey, "Special1WorldHomeGKBarrier");
-        }
-    }
-
     Client::update();
 
     updatePlayerInfo(stageScene->mHolder, playerBase, isYukimaru);
@@ -501,58 +481,4 @@ void seadPrintHook(const char* fmt, ...) {
     Logger::log(fmt, args);
 
     va_end(args);
-}
-
-// ManHunt bool and stuff
-
-namespace al {
-    bool trySyncStageSwitchAppearAndKill(LiveActor*);
-    const char* getModelName(const LiveActor* actor);
-    void startNerveAction(LiveActor*, const char*);
-}
-
-void barrierAppearHook(al::LiveActor* thisPtr, const char* actionName) {
-    if (!GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
-        return; // Disable functionality if not in HIDEANDSEEK mode
-    }
-
-    if (al::isEqualString(GameDataFunction::getCurrentStageName(thisPtr), "SkyWorldHomeStage") && 
-        al::calcDistanceH(thisPtr, sead::Vector3f{5722.f, 29000.f, -41583.f}) < 200) {
-        // thisPtr->kill();
-        al::startNerveAction(thisPtr, "Disappear");
-    } else {
-        al::startNerveAction(thisPtr, actionName);
-    }
-}
-
-
-bool compassAlwaysVisible(GameDataHolderAccessor accessor) {
-    return GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK);
-}
-
-void moonCutsceneNOP() {
-    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
-        return; // NOP when in HIDEANDSEEK mode
-    }
-    return;
-}
-
-// Declare function pointer to store original address
-int (*originalCutsceneFunc)(void) = nullptr;
-
-// Before applying patches, store the original function address
-void initPatches() {
-    // Store original function at one of the addresses you're patching
-    // For example, if 4DBF54 originally pointed to some function:
-    originalCutsceneFunc = (int(*)(void))0x[original_function_address];
-    
-    // Then apply your patches...
-}
-
-int moonCutscene() {
-    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
-        return 1; // Skip cutscene in HIDEANDSEEK mode
-    }
-    // Call the original function when not in HIDEANDSEEK
-    return originalCutsceneFunc();
 }
