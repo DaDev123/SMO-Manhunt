@@ -406,6 +406,16 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
     al::PlayerHolder* pHolder    = al::getScenePlayerHolder(stageScene);
     PlayerActorBase*  playerBase = al::tryGetPlayerActor(pHolder, 0);
 
+    al::LiveActor* player = nullptr;
+    if (pHolder) {
+        player = pHolder->getPlayer(0);
+    }
+
+    GameDataHolderWriter writer(stageScene->mHolder);
+    GameDataFunction::enableCap(writer);
+    GameDataFunction::talkCapNearHomeInWaterfall(player);
+
+
     bool isYukimaru = !playerBase->getPlayerInfo();
 
     isInGame = !stageScene->isPause();
