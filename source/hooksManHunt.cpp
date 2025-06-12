@@ -48,6 +48,10 @@ void stageSceneHook() {
     PlayerActorBase*  playerBase = al::tryGetPlayerActor(pHolder, 0);
     if (!player) return;
 
+    GameDataHolderWriter writer(stageScene->mHolder);
+    GameDataFunction::enableCap(writer);
+    GameDataFunction::talkCapNearHomeInWaterfall(player);
+
     if (!GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
         ShineTowerRocket* odyssey = rs::tryGetShineTowerRocketFromDemoDirector((al::LiveActor*)playerBase);
         if (odyssey) {
