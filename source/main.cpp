@@ -530,8 +530,12 @@ bool compassAlwaysVisible(GameDataHolderAccessor accessor) {
     return GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK);
 }
 
-bool moonCutscene() {
-    return GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK);
+int moonCutscene() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent - return 1 when in HIDEANDSEEK mode
+    }
+
+    return 0;
 }
 
 bool moonCutsceneNOP() {
