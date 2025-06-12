@@ -155,11 +155,11 @@ B59E28 B seadPrintHook  // sead::system::print
 25ffac MOV X0, #0
 
 // shine demo
-1D18F0 moonCutsceneNOP1
-1D1934 moonCutsceneNOP2
-4DBC20 moonCutsceneNOP3
-4DBF08 moonCutsceneNOP4
-4DBF14 moonCutsceneNOP5
+1D18F0 BL moonCutsceneNOP1
+1D1934 BL moonCutsceneNOP2
+4DBC20 BL moonCutsceneNOP3
+4DBF08 BL moonCutsceneNOP4
+4DBF14 BL moonCutsceneNOP5
 4DBF54 BL moonCutscene1
 4DBF60 BL moonCutscene2
 4DC1D4 BL moonCutsceneNOP6
