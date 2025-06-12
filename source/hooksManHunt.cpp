@@ -40,7 +40,8 @@
 bool manhuntSequenceHook(HakoniwaSequence* sequence) {
     StageScene* stageScene = (StageScene*)sequence->curScene;
 
-    // ManHunt Code
+    al::PlayerHolder* pHolder    = al::getScenePlayerHolder(stageScene);
+    PlayerActorBase*  playerBase = al::tryGetPlayerActor(pHolder, 0);
 
     al::LiveActor* player = nullptr;
     if (pHolder) {
