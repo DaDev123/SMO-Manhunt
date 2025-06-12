@@ -530,14 +530,205 @@ bool compassAlwaysVisible(GameDataHolderAccessor accessor) {
     return GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK);
 }
 
-int moonCutscene() {
+// Hook functions for moonCutsceneNOP - do nothing when in HideAndSeek mode
+void moonCutsceneNOP1() {
     if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
-        return 1; // MOV W0, #1 equivalent - return 1 when in HIDEANDSEEK mode
+        return; // NOP when in HIDEANDSEEK mode
     }
-
-    return 0;
+    // Original functionality when NOT in HideAndSeek mode
 }
 
-bool moonCutsceneNOP() {
-    return GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK);
+void moonCutsceneNOP2() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return; // NOP when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+}
+
+void moonCutsceneNOP3() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return; // NOP when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+}
+
+void moonCutsceneNOP4() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return; // NOP when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+}
+
+void moonCutsceneNOP5() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return; // NOP when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+}
+
+void moonCutsceneNOP6() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return; // NOP when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+}
+
+void moonCutsceneNOP7() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return; // NOP when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+}
+
+// Hook functions for moonCutscene - return 1 when in HideAndSeek mode
+int moonCutscene1() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene2() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene3() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene4() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene5() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene6() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene7() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene8() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene9() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene10() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene11() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene12() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene13() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene14() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene15() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene16() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene17() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene18() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
+}
+
+int moonCutscene19() {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
+        return 1; // MOV W0, #1 equivalent when in HIDEANDSEEK mode
+    }
+    // Original functionality when NOT in HideAndSeek mode
+    return 0; // or call original function
 }
