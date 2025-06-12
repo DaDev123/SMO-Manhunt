@@ -413,19 +413,6 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
     GameModeManager::instance()->setPaused(stageScene->isPause());
     Client::setStageInfo(stageScene->mHolder);
 
-
-
-        // ManHunt Code
-
-    al::LiveActor* player = nullptr;
-    if (pHolder) {
-        player = pHolder->getPlayer(0);
-    }
-
-    GameDataHolderWriter writer(stageScene->mHolder);
-    GameDataFunction::enableCap(writer);
-    GameDataFunction::talkCapNearHomeInWaterfall(player);
-
     Client::update();
 
     updatePlayerInfo(stageScene->mHolder, playerBase, isYukimaru);
