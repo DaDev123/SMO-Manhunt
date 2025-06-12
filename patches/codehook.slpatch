@@ -1,8 +1,7 @@
 [version=100, target=main]
-// StageScene::control+18 BL stageSceneHook
+StageScene::control+18 BL stageSceneHook
 4C8DD0 BL stageInitHook // hook to the init of a stage to modify certain conditions (we also have access to SceneInitInfo)
 50F928 BL hakoniwaSequenceHook
-50F928 BL manhuntSequenceHook
 
 // hooks to start logger
 5359D8 BL tryInitSocket // GameSystem::init
