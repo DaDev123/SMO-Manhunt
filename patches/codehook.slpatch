@@ -245,3 +245,6 @@ B59E28 B seadPrintHook  // sead::system::print
 
 //Remove boss barriers from bowser's
 009F7C BL barrierAppearHook
+
+// Remove Assist Mode Ledge Grabs
+45c69c NOP

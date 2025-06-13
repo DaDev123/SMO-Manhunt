@@ -116,10 +116,6 @@ void PuppetCapActor::update() {
 
 void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver) {
 
-        if (!mCapDamageEnabled) {
-        return; // Cap damage is currently disabled due to animation state
-    }
-
     if (GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT)) {
         al::LiveActor* targetPlayer = nullptr;
         
@@ -163,6 +159,10 @@ void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver
 
             if (manhuntMode->isPlayerNearOdysseyBarrier(this)) {
                 return; // No damage if cap owner is also near barrier
+            }
+
+            if (!mCapDamageEnabled) {
+                return; // Cap damage is currently disabled due to animation state
             }
 
 
