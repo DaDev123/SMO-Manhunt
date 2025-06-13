@@ -59,7 +59,8 @@ However, for any further questions or help not covered by the site, please visit
 - [Sanae](https://github.com/sanae6) Wrote the majority of the server code
 - [Shadow](https://github.com/shadowninja108) original author of starlight, the tool used to make this entire mod possible
 - [GRAnimated](https://github.com/GRAnimated)
-- [Eriizer](https://www.youtube.com/channel/UCYfcjnuVTrf7pJqz2Jkm3SA) ManHunt In-Game Logo
+- [Istador/RCL](https://github.com/istador) Build Based on the Dev Build
+- [Eriizer](https://github.com/erickr3513) ManHunt In-Game Logo [GameBanana](https://gamebanana.com/members/2107084)
 
 # Credits
 - [OdysseyDecomp](https://github.com/shibbo/OdysseyDecomp)
