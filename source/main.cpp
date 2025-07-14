@@ -156,9 +156,9 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
     );
 
 #if EMU
-    gTextWriter->printf("Mod version: 1.0.0 for Emulators\n", TOSTRING(BUILDVERSTR));
+    gTextWriter->printf("Mod version: 1.1.0 for Emulators\n", TOSTRING(BUILDVERSTR));
 #else
-    gTextWriter->printf("Mod version: 1.0.0 for Switch\n", TOSTRING(BUILDVERSTR));
+    gTextWriter->printf("Mod version: 1.1.0 for Switch\n", TOSTRING(BUILDVERSTR));
 #endif
 
     al::Scene* curScene = curSequence->curScene;
