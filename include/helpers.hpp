@@ -91,9 +91,7 @@ __attribute__((used)) static const char* costumeNames[] = {
     "MarioSpewart", // DLC
     "MarioSunshine", // DLC
     "MarioTopper", // DLC
-    "MarioZombie", // DLC
-    "MarioWooper" // Custom
-    "MarioTanooki" // Custom
+    "MarioZombie" // DLC
 };
 
 struct HackActorName {

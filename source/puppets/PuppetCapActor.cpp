@@ -18,27 +18,27 @@
 #include "game/HakoniwaSequence/HakoniwaSequence.h"
 #include "game/System/GameSystem.h"
 #include "server/DeltaTime.hpp"
-PuppetCapActor::PuppetCapActor(const char* name) : al::LiveActor(name) {}
+
+PuppetCapActor::PuppetCapActor(const char* name) : al::LiveActor(name) {
+    mIsInvincible = false;
+    mInvincibleTimer = 0.0f;
+    mWasNearBarrier = false;
+}
 
 void PuppetCapActor::init(al::ActorInitInfo const& initInfo) {
     sead::FixedSafeString<0x20> capModelName;
 
     PlayerFunction::createCapModelName(&capModelName, tryGetPuppetCapName(mInfo));
-
     PlayerFunction::initCapModelActorDemo(this, initInfo, capModelName.cstr());
 
     initHitSensor(2);
-
     al::addHitSensor(this, initInfo, "Push", SensorType::MapObjSimple, 60.0f, 8, sead::Vector3f::zero);
-
     al::addHitSensor(this, initInfo, "Attack", SensorType::EnemyAttack, 300.0f, 8, sead::Vector3f::zero);
 
     al::hideSilhouetteModelIfShow(this);
-
     al::initExecutorModelUpdate(this, initInfo);
 
     mJointKeeper = new HackCapJointControlKeeper();
-
     mJointKeeper->initCapJointControl(this);
 
     makeActorDead();
@@ -66,37 +66,45 @@ void PuppetCapActor::control() {
     auto* curSeq = (HakoniwaSequence*) GameSystemFunction::getGameSystem()->mSequence;
     if (!curSeq || !curSeq->curScene) return;
     StageScene* stageScene = (StageScene*) curSeq->curScene;
+    ManHuntMode* manhuntMode = GameModeManager::instance()->getMode<ManHuntMode>();
 
     al::PlayerHolder* pHolder = al::getScenePlayerHolder(stageScene);
     PlayerActorBase* playerBase = al::tryGetPlayerActor(pHolder, 0);
-
     auto* player = dynamic_cast<PlayerActorHakoniwa*>(playerBase);
-    if (!player) {
+    if (!player) return;
+
+    if (player && manhuntMode && mInfo) {
+        bool isNearBarrier = manhuntMode->isPlayerNearOdysseyBarrier(player);
+
+        if (mWasNearBarrier && !isNearBarrier) {
+            mIsInvincible = true;
+            mInvincibleTimer = 0.5f;
+        }
+
+        mWasNearBarrier = isNearBarrier;
     }
 
-
+    // Invincibility logic for animations
     if (player->mPlayerAnimator->isAnim("CatchKoopaCap")) {
-        mCapDamageEnabled = false;
-        mWaitingToEnableDamage = false;
-        mDamageEnableTimer = 0.0f;
-    } else if (player->mPlayerAnimator->isAnim("KoopaCapPunchFinishL") || player->mPlayerAnimator->isAnim("KoopaCapPunchFinishR")) {
-        if (!mWaitingToEnableDamage) {
-            mCapDamageEnabled = false;
-            mWaitingToEnableDamage = true;
-            mDamageEnableTimer = 2.2; // 5 second delay
+        mIsInvincible = true;
+        mInvincibleTimer = 0.0f;
+    } 
+    else if (player->mPlayerAnimator->isAnim("KoopaCapPunchFinishL") ||
+             player->mPlayerAnimator->isAnim("KoopaCapPunchFinishR")) 
+    {
+        if (mIsInvincible && mInvincibleTimer <= 0.0f) {
+            mInvincibleTimer = 0.85f;
+        }
+    } 
+    else if (mInvincibleTimer > 0.0f) {
+        mInvincibleTimer -= Time::deltaTime;
+        if (mInvincibleTimer <= 0.0f) {
+            mIsInvincible = false;
+            mInvincibleTimer = 0.0f;
         }
     }
 
-    if (mWaitingToEnableDamage) {
-        mDamageEnableTimer -= Time::deltaTime;
-        if (mDamageEnableTimer <= 0.0f) {
-            mCapDamageEnabled = true;
-            mWaitingToEnableDamage = false;
-            mDamageEnableTimer = 0.0f;
-        }
-    }
-
-    // Position and rotation lerp updates
+    // Lerp position/rotation to sync puppet with owner
     sead::Vector3f* cPos = al::getTransPtr(this);
     if (*cPos != mInfo->capPos) {
         al::lerpVec(cPos, *cPos, mInfo->capPos, 0.45);
@@ -108,129 +116,103 @@ void PuppetCapActor::control() {
     mJointKeeper->mSkew = al::lerpValue(mJointKeeper->mSkew, mInfo->capRot.w, 0.85);
 }
 
-
 void PuppetCapActor::update() {
     al::LiveActor::calcAnim();
     al::LiveActor::movement();
 }
 
 void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver) {
+    ManHuntMode* manhuntMode = GameModeManager::instance()->getMode<ManHuntMode>();
+    if (mIsInvincible) return;
 
     if (GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT)) {
         al::LiveActor* targetPlayer = nullptr;
-        
-        // Check direct player hit or captured actor hit
+
         if (al::isSensorPlayer(receiver)) {
             targetPlayer = al::getSensorHost(receiver);
         } else {
-            // Check if this is a captured/hacked actor
             auto* receiverHost = al::getSensorHost(receiver);
-            auto* player = (PlayerActorHakoniwa*) al::getPlayerActor(receiverHost, 0);
-            
-            if (player && player->mHackKeeper && 
-                player->mHackKeeper->currentHackActor && 
-                player->mHackKeeper->currentHackActor == receiverHost) {
-                targetPlayer = player;
-            }
-        }
-        
-        if (!targetPlayer) return;
-
-        auto* targetPlayerHako = (PlayerActorHakoniwa*)targetPlayer;
-        if (targetPlayerHako && targetPlayerHako->mHackKeeper && 
-            targetPlayerHako->mHackKeeper->currentHackActor) {
-            
-            // Get the name of the current hack
-            const char* hackName = targetPlayerHako->mHackKeeper->getCurrentHackName();
-            
-            // Check if the current hack is specifically a Tank
-            if (hackName && strcmp(hackName, "Tank") == 0) {
-                return; // Tank immunity - no damage taken
-            }
-        }
-
-            // Get the ManHunt mode instance
-            ManHuntMode* manhuntMode = GameModeManager::instance()->getMode<ManHuntMode>();
-            if (!manhuntMode || !mInfo) return;
-
-            if (manhuntMode->isPlayerNearOdysseyBarrier(targetPlayer)) {
-                return; // Absolute protection - no damage allowed when near barrier
-            }
-
-            if (manhuntMode->isPlayerNearOdysseyBarrier(this)) {
-                return; // No damage if cap owner is also near barrier
-            }
-
-            if (!mCapDamageEnabled) {
-                return; // Cap damage is currently disabled due to animation state
-            }
-
-
-
-            // Get target player's position for puppet matching
-            sead::Vector3f targetPos = al::getTrans(targetPlayer);
-
-            // Find the target player's info with improved matching
-            PuppetInfo* targetInfo = nullptr;
-            float closestDistSq = 10000.0f; // Start with max distance
-            
-            for (int i = 0; i < Client::getMaxPlayerCount(); i++) {
-                PuppetInfo* puppet = Client::getPuppetInfo(i);
-                if (!puppet || !puppet->isConnected) continue;
-
-                float distSq = vecDistanceSq(puppet->playerPos, targetPos);
-                if (distSq < closestDistSq) {
-                    closestDistSq = distSq;
-                    targetInfo = puppet;
+            if (receiverHost) {
+                auto* playerActor = al::getPlayerActor(receiverHost, 0);
+                if (playerActor) {
+                    auto* player = dynamic_cast<PlayerActorHakoniwa*>(playerActor);
+                    if (player && player->mHackKeeper && player->mHackKeeper->currentHackActor == receiverHost) {
+                        targetPlayer = player;
+                    }
                 }
             }
-
-            // Verify we found a close enough match (within reasonable distance)
-            if (targetInfo && closestDistSq > 2500.0f) { // ~50 units squared
-                targetInfo = nullptr; // Distance too far, likely not a match
-            }
-
-            // Determine if target is main player and get their role
-            bool targetIsHiding = false;
-            bool targetIsSeeking = false;
-            
-            if (!targetInfo) {
-                // Target is likely the main player - get role from mode
-                targetIsHiding = manhuntMode->isPlayerRunning();
-                targetIsSeeking = manhuntMode->isPlayerHunting();
-            } else {
-                // Target is a puppet - get role from PuppetInfo
-                targetIsHiding = targetInfo->manhuntIsRunning();
-                targetIsSeeking = targetInfo->manhuntIsHunting();
-            }
-
-            // Only allow damage if roles are opposite AND neither is near barrier
-            bool canDealDamage = false;
-            
-            if (mInfo->manhuntIsHunting() && targetIsHiding) {
-                canDealDamage = true;
-            } else if (mInfo->manhuntIsRunning() && targetIsSeeking) {
-                canDealDamage = true;
-            }
-
-            // Final barrier check before dealing damage (double safety)
-            if (canDealDamage && !manhuntMode->isPlayerNearOdysseyBarrier(targetPlayer)) {
-                al::sendMsgEnemyAttack(receiver, sender);
-            }
-            
-            return;
         }
 
-    if (!GameModeManager::hasCappyCollision()) {
+        if (!targetPlayer) return;
+
+        auto* targetPlayerHako = dynamic_cast<PlayerActorHakoniwa*>(targetPlayer);
+        if (targetPlayerHako && targetPlayerHako->mHackKeeper && 
+            targetPlayerHako->mHackKeeper->currentHackActor) {
+            const char* hackName = targetPlayerHako->mHackKeeper->getCurrentHackName();
+            if (hackName && strcmp(hackName, "Tank") == 0) {
+                return;
+            }
+        }
+
+        if (!manhuntMode || !mInfo) return;
+
+        if (manhuntMode->isPlayerNearOdysseyBarrier(targetPlayer)) return;
+        if (manhuntMode->isPlayerNearOdysseyBarrier(this)) return;
+
+        if (!mCapDamageEnabled) return;
+
+        sead::Vector3f targetPos = al::getTrans(targetPlayer);
+
+        PuppetInfo* targetInfo = nullptr;
+        float closestDistSq = 10000.0f;
+
+        for (int i = 0; i < Client::getMaxPlayerCount(); i++) {
+            PuppetInfo* puppet = Client::getPuppetInfo(i);
+            if (!puppet || !puppet->isConnected) continue;
+
+            float distSq = vecDistanceSq(puppet->playerPos, targetPos);
+            if (distSq < closestDistSq) {
+                closestDistSq = distSq;
+                targetInfo = puppet;
+            }
+        }
+
+        if (targetInfo && closestDistSq > 2500.0f) {
+            targetInfo = nullptr;
+        }
+
+        bool targetIsHiding = false;
+        bool targetIsSeeking = false;
+
+        if (!targetInfo) {
+            targetIsHiding = manhuntMode->isPlayerRunning();
+            targetIsSeeking = manhuntMode->isPlayerHunting();
+        } else {
+            targetIsHiding = targetInfo->manhuntIsRunning();
+            targetIsSeeking = targetInfo->manhuntIsHunting();
+        }
+
+        bool canDealDamage = false;
+
+        if (mInfo->manhuntIsHunting() && targetIsHiding) {
+            canDealDamage = true;
+        } else if (mInfo->manhuntIsRunning() && targetIsSeeking) {
+            canDealDamage = true;
+        }
+
+        if (canDealDamage && !manhuntMode->isPlayerNearOdysseyBarrier(targetPlayer)) {
+            al::sendMsgEnemyAttack(receiver, sender);
+        }
+
         return;
     }
 
-    // Original logic for non-Hide and Seek modes
+    if (!GameModeManager::hasCappyCollision()) return;
+
     if (al::isSensorPlayer(receiver) && al::isSensorName(sender, "Push")) {
         rs::sendMsgPushToPlayer(receiver, sender);
     }
 }
-
 
 bool PuppetCapActor::receiveMsg(const al::SensorMsg* msg, al::HitSensor* sender, al::HitSensor* receiver) {
     if (!GameModeManager::hasCappyBounce()) {
@@ -256,10 +238,8 @@ bool PuppetCapActor::receiveMsg(const al::SensorMsg* msg, al::HitSensor* sender,
 void PuppetCapActor::startAction(const char* actName) {
     if (al::tryStartActionIfNotPlaying(this, actName)) {
         const char* curActName = al::getActionName(this);
-        if (curActName) {
-            if (al::isSklAnimExist(this, curActName)) {
-                al::clearSklAnimInterpole(this);
-            }
+        if (curActName && al::isSklAnimExist(this, curActName)) {
+            al::clearSklAnimInterpole(this);
         }
     }
 }

@@ -29,13 +29,12 @@ class PuppetCapActor : public al::LiveActor {
         void setOwnerUserID(const nn::account::Uid& userID) { mUserID = userID; }
         const nn::account::Uid& getOwnerUserID() const { return mUserID; }
 
-    bool mCapDamageEnabled = true;  // damage enabled by default
-    bool mWaitingToEnableDamage = false;
-    float mDamageEnableTimer = 0.0f; // counts down seconds
-
-
     private:
         HackCapJointControlKeeper* mJointKeeper;
         PuppetInfo* mInfo;
         nn::account::Uid mUserID;
+        bool mCapDamageEnabled = true;
+        bool mIsInvincible = false;
+        float mInvincibleTimer = 0.0f;  // ← Add this line
+        bool mWasNearBarrier = false; // Just to track last-frame barrier state
 };
