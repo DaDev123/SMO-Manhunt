@@ -1,65 +1,63 @@
-# Super Mario Odyssey - ManHunt Multiplayer Gamemode
+# Super Mario Odyssey - ManHunt Online Multiplayer Mod
 
-Welcome to the official repository for the Super Mario Odyssey Online mod! Have fun exploring kingdoms with friends, playing gamemodes, or beating the game as fast as possible! This mod is still early in development, so expect bugs and un-refined aspects as we work hard to improve it and make the mod as polished as possible.
+Welcome to the official repository for the Super Mario Odyssey ManHunt Online mod! Have fun Playing the ManHunt Gamemode with Friends!
 
 ## Features
 
-* Explore Kingdoms together with up to 16 People
+* Play Manhunt together with up to 16 People
 * Almost every capture in the game is synced between players
 * Full 2D and Costume models syncing
 * Moon Collection is shared between all players
-* Custom Configuration Menu (Accessible by holding ZL and selecting any option in the pause/start menu)
-	
+* Custom Configuration Menu (Accessible in the pause/start menu)
+* Support for custom gamemodes (WIP)
+### Available Gamemodes
+* ManHunt
 
-## Installation and Usage
-For the typical installation along with how to setup and use Multiplayer / ManHunt, please visit the [Super Mario Odyssey Online website](https://smoo.it).
+## SMO Version Support
 
-<details>
+* 1.0
 
-<summary>Developer build instructions</summary>
+## Installation Tutorial
 
-  ### Building Prerequisites
+Before installing, Ensure that your switch is hacked. If not, follow [This Guide](https://switch.homebrew.guide/) to get your switch setup for modding. Make sure you set up a way to block Nintendo's servers as you will need to have your switch connected to the internet for this mod to work!
 
-  - [devkitPro](https://devkitpro.org/) 
-  - Python 3
-  - The [Keystone-Engine](https://www.keystone-engine.org/) Python Module
+1. Download the latest mod build from either [Gamebanana](https://gamebanana.com/mods/384214) or from the [Releases](https://github.com/CraftyBoss/SuperMarioOdysseyOnline/releases) tab. (Alternatively, build from source)
+2. Extract the downloaded zip onto the root of your Switch's SD card.
+3. If you need to host an online server, head over to the [Super Mario Odyssey Online Server](https://github.com/Sanae6/SmoOnlineServer) repository and follow the instructions there to set up the server.
+4. Launch the game! Upon first time bootup, the mod should ask for a server IP to save to the games common save file. This IP address will be the server you wish to connect to every time you launch the game with the mod installed. (Note: un-installing the mod and launching the game will remove the server IP from the common save file.)
 
-  ### Building
+## Building Prerequisites
 
-  Build has only been tested on WSL2 running Ubuntu 20.04.1.
+- [devkitPro](https://devkitpro.org/) 
+- Python 3
+- The [Keystone-Engine](https://www.keystone-engine.org/) Python Module
 
-  Just run:
-  ```
-  DEVKITPRO={path_to_devkitpro} make
-  ```
+## Building
 
-  On Ubuntu (and other Debian-based systems), devkitPro will be installed to `/opt/devkitpro` by default:
+Build has only been tested on WSL2 running Ubuntu 20.04.1.
 
-  ```
-  DEVKITPRO=/opt/devkitpro/ make
-  ```
+Just run:
+```
+DEVKITPRO={path_to_devkitpro} make
+```
 
-  ### Installing (Atmosphère)
+On Ubuntu (and other Debian-based systems), devkitPro will be installed to `/opt/devkitpro` by default:
 
-  After a successful build, simply transfer the `atmosphere` folder located inside `starlight_patch_100` to the root of your switch's SD card.
-</details>
+```
+DEVKITPRO=/opt/devkitpro/ make
+```
 
-## Troubleshooting
+## Installing (Atmosphère)
 
-The [Super Mario Odyssey Online website](https://smoo.it) has a FAQ section that should solve many issues.
-However, for any further questions or help not covered by the site, please visit the [CraftyBoss Community Discord Server](discord.gg/jYCueK2BqD) and ask in the `help`/`help-2` channel. 
+After a successful build, simply transfer the `atmosphere` folder located inside `starlight_patch_100` to the root of your switch's SD card.
 
 ---
 
 # Contributors
 
-- [CraftyBoss](https://github.com/craftyboss) Wrote the majority of the multiplayer code
-- [Secret Dev](https://github.com/craftyboss) Wrote the majority of the new manhunt code
-- [Hesmakka/LynxDev2](https://github.com/lynxdev2) Wrote the majority of compass code aswell as some other code (Original Author of the code of the 1st ManHunt he made)
 - [Sanae](https://github.com/sanae6) Wrote the majority of the server code
 - [Shadow](https://github.com/shadowninja108) original author of starlight, the tool used to make this entire mod possible
 - [GRAnimated](https://github.com/GRAnimated)
-- [Eriizer](https://www.youtube.com/channel/UCYfcjnuVTrf7pJqz2Jkm3SA) ManHunt In-Game Logo
 
 # Credits
 - [OdysseyDecomp](https://github.com/shibbo/OdysseyDecomp)

@@ -1,19 +1,15 @@
 #include "actors/PuppetCapActor.h"
-
+#include "al/sensor/HitSensor.h"
 #include "al/util.hpp"
-#include "rs/util.hpp"
 #include "al/util/MathUtil.h"
-#include "al/util/SensorUtil.h"
-
-#include "game/Player/PlayerFunction.h"
-
+#include "logger.hpp"
+#include "math/seadVector.h"
 #include "rs/util/SensorUtil.h"
-
-#include "sead/math/seadVector.h"
-
+#include "al/util/SensorUtil.h"
 #include "server/gamemode/GameModeManager.hpp"
+#include "server/gamemode/GameModeBase.hpp"
 
-#include "server/manhunt/ManHuntMode.hpp"  
+#include "server/manhunt/ManHuntMode.hpp"
 #include "server/Client.hpp"
 #include "game/HakoniwaSequence/HakoniwaSequence.h"
 #include "game/System/GameSystem.h"
@@ -22,23 +18,30 @@
 PuppetCapActor::PuppetCapActor(const char* name) : al::LiveActor(name) {
     mIsInvincible = false;
     mInvincibleTimer = 0.0f;
-    mWasNearBarrier = false;
 }
 
-void PuppetCapActor::init(al::ActorInitInfo const& initInfo) {
+void PuppetCapActor::init(al::ActorInitInfo const &initInfo) {
+
     sead::FixedSafeString<0x20> capModelName;
 
     PlayerFunction::createCapModelName(&capModelName, tryGetPuppetCapName(mInfo));
+
     PlayerFunction::initCapModelActorDemo(this, initInfo, capModelName.cstr());
 
     initHitSensor(2);
-    al::addHitSensor(this, initInfo, "Push", SensorType::MapObjSimple, 60.0f, 8, sead::Vector3f::zero);
-    al::addHitSensor(this, initInfo, "Attack", SensorType::EnemyAttack, 300.0f, 8, sead::Vector3f::zero);
+
+    al::addHitSensor(this, initInfo, "Push", SensorType::MapObjSimple, 60.0f, 8,
+                     sead::Vector3f::zero);
+
+    al::addHitSensor(this, initInfo, "Attack", SensorType::EnemyAttack, 300.0f, 8,
+                     sead::Vector3f::zero);
 
     al::hideSilhouetteModelIfShow(this);
+
     al::initExecutorModelUpdate(this, initInfo);
 
     mJointKeeper = new HackCapJointControlKeeper();
+
     mJointKeeper->initCapJointControl(this);
 
     makeActorDead();
@@ -48,7 +51,7 @@ void PuppetCapActor::initAfterPlacement() {
     al::LiveActor::initAfterPlacement();
 }
 
-void PuppetCapActor::initOnline(PuppetInfo* pupInfo) {
+void PuppetCapActor::initOnline(PuppetInfo *pupInfo) {
     mInfo = pupInfo;
 }
 
@@ -57,32 +60,19 @@ void PuppetCapActor::movement() {
 }
 
 void PuppetCapActor::control() {
-    Time::calcTime();
-
-    if (mInfo->capAnim) {
+    if(mInfo->capAnim) {
         startAction(mInfo->capAnim);
     }
 
     auto* curSeq = (HakoniwaSequence*) GameSystemFunction::getGameSystem()->mSequence;
     if (!curSeq || !curSeq->curScene) return;
     StageScene* stageScene = (StageScene*) curSeq->curScene;
-    ManHuntMode* manhuntMode = GameModeManager::instance()->getMode<ManHuntMode>();
+    ManHuntMode* hnsMode = GameModeManager::instance()->getMode<ManHuntMode>();
 
     al::PlayerHolder* pHolder = al::getScenePlayerHolder(stageScene);
     PlayerActorBase* playerBase = al::tryGetPlayerActor(pHolder, 0);
     auto* player = dynamic_cast<PlayerActorHakoniwa*>(playerBase);
     if (!player) return;
-
-    if (player && manhuntMode && mInfo) {
-        bool isNearBarrier = manhuntMode->isPlayerNearOdysseyBarrier(player);
-
-        if (mWasNearBarrier && !isNearBarrier) {
-            mIsInvincible = true;
-            mInvincibleTimer = 0.5f;
-        }
-
-        mWasNearBarrier = isNearBarrier;
-    }
 
     // Invincibility logic for animations
     if (player->mPlayerAnimator->isAnim("CatchKoopaCap")) {
@@ -104,9 +94,10 @@ void PuppetCapActor::control() {
         }
     }
 
-    // Lerp position/rotation to sync puppet with owner
-    sead::Vector3f* cPos = al::getTransPtr(this);
-    if (*cPos != mInfo->capPos) {
+    sead::Vector3f *cPos = al::getTransPtr(this);
+
+    if(*cPos != mInfo->capPos) 
+    {
         al::lerpVec(cPos, *cPos, mInfo->capPos, 0.45);
     }
 
@@ -122,30 +113,28 @@ void PuppetCapActor::update() {
 }
 
 void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver) {
-    ManHuntMode* manhuntMode = GameModeManager::instance()->getMode<ManHuntMode>();
-    if (mIsInvincible) return;
+    
+    auto* curSeq = (HakoniwaSequence*) GameSystemFunction::getGameSystem()->mSequence;
+    if (!curSeq || !curSeq->curScene) return;
+    StageScene* stageScene = (StageScene*) curSeq->curScene;
+    ManHuntMode* hnsMode = GameModeManager::instance()->getMode<ManHuntMode>();
 
-    if (GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT)) {
-        al::LiveActor* targetPlayer = nullptr;
+    al::PlayerHolder* pHolder = al::getScenePlayerHolder(stageScene);
+    PlayerActorBase* playerBase = al::tryGetPlayerActor(pHolder, 0);
+    auto* player = dynamic_cast<PlayerActorHakoniwa*>(playerBase);
+    if (!player) return;
+    
+    if (al::isSensorPlayer(receiver) && al::isSensorName(sender, "Push")) {
+        rs::sendMsgPushToPlayer(receiver, sender);
+    }
 
-        if (al::isSensorPlayer(receiver)) {
-            targetPlayer = al::getSensorHost(receiver);
-        } else {
-            auto* receiverHost = al::getSensorHost(receiver);
-            if (receiverHost) {
-                auto* playerActor = al::getPlayerActor(receiverHost, 0);
-                if (playerActor) {
-                    auto* player = dynamic_cast<PlayerActorHakoniwa*>(playerActor);
-                    if (player && player->mHackKeeper && player->mHackKeeper->currentHackActor == receiverHost) {
-                        targetPlayer = player;
-                    }
-                }
-            }
-        }
-
-        if (!targetPlayer) return;
-
-        auto* targetPlayerHako = dynamic_cast<PlayerActorHakoniwa*>(targetPlayer);
+    // Handle cap-only damage for seeker vs hider combat
+    if (al::isSensorPlayer(receiver) && al::isSensorName(sender, "Attack")) {
+        // Check if we're in Hide and Seek mode
+        if (GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT)) {
+            ManHuntMode* hnsMode = GameModeManager::instance()->getMode<ManHuntMode>();
+            
+        auto* targetPlayerHako = dynamic_cast<PlayerActorHakoniwa*>(player);
         if (targetPlayerHako && targetPlayerHako->mHackKeeper && 
             targetPlayerHako->mHackKeeper->currentHackActor) {
             const char* hackName = targetPlayerHako->mHackKeeper->getCurrentHackName();
@@ -154,70 +143,57 @@ void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver
             }
         }
 
-        if (!manhuntMode || !mInfo) return;
 
-        if (manhuntMode->isPlayerNearOdysseyBarrier(targetPlayer)) return;
-        if (manhuntMode->isPlayerNearOdysseyBarrier(this)) return;
-
-        if (!mCapDamageEnabled) return;
-
-        sead::Vector3f targetPos = al::getTrans(targetPlayer);
-
-        PuppetInfo* targetInfo = nullptr;
-        float closestDistSq = 10000.0f;
-
-        for (int i = 0; i < Client::getMaxPlayerCount(); i++) {
-            PuppetInfo* puppet = Client::getPuppetInfo(i);
-            if (!puppet || !puppet->isConnected) continue;
-
-            float distSq = vecDistanceSq(puppet->playerPos, targetPos);
-            if (distSq < closestDistSq) {
-                closestDistSq = distSq;
-                targetInfo = puppet;
+            if (mIsInvincible) return;
+            if (hnsMode && mInfo) {
+                // Get cap owner's role
+                bool capOwnerIsSeeker = mInfo->isIt;
+                
+                // Get target's role - assume if it's hitting local player
+                bool targetIsSeeker = hnsMode->isPlayerHunting();
+                
+                // Simple cross-team validation
+                // Only allow damage if roles are different (seeker vs hider or hider vs seeker)
+                if (capOwnerIsSeeker != targetIsSeeker) {
+                    
+                    // If cap owner is a hider, check if they're in safe zone
+                    if (!capOwnerIsSeeker) { // Cap owner is hider/runner
+                        // Find the cap owner's puppet by iterating through all puppets
+                        PuppetHolder* puppetHolder = Client::getPuppetHolder();
+                        if (puppetHolder) {
+                            for (int i = 0; i < puppetHolder->getSize(); i++) {
+                                PuppetActor* puppet = puppetHolder->getPuppetActor(i);
+                                if (puppet && puppet->getInfo() && 
+                                    puppet->getInfo()->playerID == mInfo->playerID) {
+                                    // Found the cap owner's puppet
+                                    if (hnsMode->isPlayerInSafeZone(puppet)) {
+                                        return; // Cap owner (hider) is in safe zone, can't deal damage
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // If target is a hider, check if they're in safe zone
+                    if (!targetIsSeeker) { // Target is hider/runner
+                        al::LiveActor* targetActor = al::getSensorHost(receiver);
+                        if (targetActor && hnsMode->isPlayerInSafeZone(targetActor)) {
+                            return; // Hider is in safe zone, no damage
+                        }
+                    }
+                    
+                    // Send enemy attack message for cap damage
+                    al::sendMsgEnemyAttack(receiver, sender);
+                }
             }
         }
-
-        if (targetInfo && closestDistSq > 2500.0f) {
-            targetInfo = nullptr;
-        }
-
-        bool targetIsHiding = false;
-        bool targetIsSeeking = false;
-
-        if (!targetInfo) {
-            targetIsHiding = manhuntMode->isPlayerRunning();
-            targetIsSeeking = manhuntMode->isPlayerHunting();
-        } else {
-            targetIsHiding = targetInfo->manhuntIsRunning();
-            targetIsSeeking = targetInfo->manhuntIsHunting();
-        }
-
-        bool canDealDamage = false;
-
-        if (mInfo->manhuntIsHunting() && targetIsHiding) {
-            canDealDamage = true;
-        } else if (mInfo->manhuntIsRunning() && targetIsSeeking) {
-            canDealDamage = true;
-        }
-
-        if (canDealDamage && !manhuntMode->isPlayerNearOdysseyBarrier(targetPlayer)) {
-            al::sendMsgEnemyAttack(receiver, sender);
-        }
-
-        return;
-    }
-
-    if (!GameModeManager::hasCappyCollision()) return;
-
-    if (al::isSensorPlayer(receiver) && al::isSensorName(sender, "Push")) {
-        rs::sendMsgPushToPlayer(receiver, sender);
     }
 }
 
-bool PuppetCapActor::receiveMsg(const al::SensorMsg* msg, al::HitSensor* sender, al::HitSensor* receiver) {
-    if (!GameModeManager::hasCappyBounce()) {
-        return false;
-    }
+bool PuppetCapActor::receiveMsg(const al::SensorMsg* msg, al::HitSensor* sender,
+                             al::HitSensor* receiver) {
+
 
     if (al::isMsgPlayerDisregard(msg)) {
         return true;
@@ -235,11 +211,13 @@ bool PuppetCapActor::receiveMsg(const al::SensorMsg* msg, al::HitSensor* sender,
     return false;
 }
 
-void PuppetCapActor::startAction(const char* actName) {
-    if (al::tryStartActionIfNotPlaying(this, actName)) {
-        const char* curActName = al::getActionName(this);
-        if (curActName && al::isSklAnimExist(this, curActName)) {
-            al::clearSklAnimInterpole(this);
+void PuppetCapActor::startAction(const char *actName) {
+    if(al::tryStartActionIfNotPlaying(this, actName)) {
+        const char *curActName = al::getActionName(this);
+        if(curActName) {
+            if(al::isSklAnimExist(this, curActName)) {
+                al::clearSklAnimInterpole(this);
+            }
         }
     }
 }

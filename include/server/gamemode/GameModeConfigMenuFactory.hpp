@@ -12,25 +12,24 @@ GameModeConfigMenu* createGameModeConfigMenu(const char* name) {
 };
 
 __attribute((used)) constexpr al::NameToCreator<createMenu> menuTable[] = {
-    { "ManHunt",     &createGameModeConfigMenu<ManHuntConfigMenu>     },
+    {"ManHunt", &createGameModeConfigMenu<ManHuntConfigMenu>}
 };
 
 class GameModeConfigMenuFactory : public al::Factory<createMenu> {
-    public:
-        GameModeConfigMenuFactory(const char* fName) {
-            this->factoryName = fName;
-            this->actorTable = menuTable;
-            this->factoryCount = sizeof(menuTable) / sizeof(menuTable[0]);
-        };
+public:
+    GameModeConfigMenuFactory(const char* fName) {
+        this->factoryName = fName;
+        this->actorTable = menuTable;
+        this->factoryCount = sizeof(menuTable) / sizeof(menuTable[0]);
+    };
 
-        constexpr static const char* getMenuName(int idx);
-        constexpr static int getMenuCount();
+    constexpr static const char* getMenuName(int idx);
+    constexpr static int getMenuCount();
 };
 
 constexpr const char* GameModeConfigMenuFactory::getMenuName(int idx) {
-    if (idx >= 0 && idx < sizeof(menuTable) / sizeof(menuTable[0])) {
+    if (idx >= 0 && idx < sizeof(menuTable) / sizeof(menuTable[0]))
         return menuTable[idx].creatorName;
-    }
     return nullptr;
 }
 

@@ -45,8 +45,8 @@ class StageSceneStateServerConfig : public al::HostStateBase<al::Scene>, public 
         void exeMainMenu();
         void exeOpenKeyboardIP();
         void exeOpenKeyboardPort();
-        void exeToggleMusic();
         void exeHideServer();
+        void exeToggleMusic();
         void exeGamemodeConfig();
         void exeGamemodeSelect();
         void exeSaveData();
@@ -100,8 +100,8 @@ namespace {
     NERVE_HEADER(StageSceneStateServerConfig, MainMenu)
     NERVE_HEADER(StageSceneStateServerConfig, OpenKeyboardIP)
     NERVE_HEADER(StageSceneStateServerConfig, OpenKeyboardPort)
-    NERVE_HEADER(StageSceneStateServerConfig, ToggleMusic)
     NERVE_HEADER(StageSceneStateServerConfig, HideServer)
+    NERVE_HEADER(StageSceneStateServerConfig, ToggleMusic)
     NERVE_HEADER(StageSceneStateServerConfig, GamemodeConfig)
     NERVE_HEADER(StageSceneStateServerConfig, GamemodeSelect)
     NERVE_HEADER(StageSceneStateServerConfig, SaveData)

@@ -1,121 +1,110 @@
 #include "server/manhunt/ManHuntMode.hpp"
-
+#include <cmath>
+#include "al/async/FunctorV0M.hpp"
 #include "al/util.hpp"
 #include "al/util/DemoUtil.h"
-
-#include "game/GameData/GameDataFunction.h"
+#include "al/util/ControllerUtil.h"
+#include "al/util/LiveActorUtil.h"
 #include "game/GameData/GameDataHolderAccessor.h"
+#include "game/Layouts/CoinCounter.h"
+#include "game/Layouts/MapMini.h"
 #include "game/Player/PlayerActorBase.h"
 #include "game/Player/PlayerActorHakoniwa.h"
-#include "game/Player/PlayerFunction.h"
-
+#include "heap/seadHeapMgr.h"
+#include "layouts/ManHuntIcon.h"
 #include "logger.hpp"
-
+#include "math/seadVector.h"
+#include "packets/Packet.h"
 #include "rs/util.hpp"
 #include "rs/util/PlayerUtil.h"
-
-#include "sead/heap/seadHeapMgr.h"
-#include "sead/math/seadVector.h"
-
+#include "server/gamemode/GameModeBase.hpp"
 #include "server/Client.hpp"
-#include "server/DeltaTime.hpp"
+#include "server/gamemode/GameModeTimer.hpp"
+#include <heap/seadHeap.h>
+#include <math.h>
 #include "server/gamemode/GameModeManager.hpp"
 #include "server/gamemode/GameModeFactory.hpp"
-#include "server/manhunt/ManHuntPacket.hpp"
 
+#include "basis/seadNew.h"
+#include "server/manhunt/ManHuntConfigMenu.hpp"
 
 ManHuntMode::ManHuntMode(const char* name) : GameModeBase(name) {}
 
 void ManHuntMode::init(const GameModeInitInfo& info) {
     mSceneObjHolder = info.mSceneObjHolder;
-    mMode           = info.mMode;
-    mCurScene       = (StageScene*)info.mScene;
-    mPuppetHolder   = info.mPuppetHolder;
+    mMode = info.mMode;
+    mCurScene = (StageScene*)info.mScene;
+    mPuppetHolder = info.mPuppetHolder;
 
-    GameModeInfoBase* curGameInfo = GameModeManager::instance()->getInfo<GameModeInfoBase>();
+    GameModeInfoBase* curGameInfo = GameModeManager::instance()->getInfo<ManHuntInfo>();
 
-    sead::ScopedCurrentHeapSetter heapSetter(GameModeManager::instance()->getHeap());
-
-    if (curGameInfo) {
-        Logger::log("Gamemode info found: %s %s\n", GameModeFactory::getModeString(curGameInfo->mMode), GameModeFactory::getModeString(info.mMode));
-    } else {
-        Logger::log("No gamemode info found\n");
-    }
-
+    if (curGameInfo) Logger::log("Gamemode info found: %s %s\n", GameModeFactory::getModeString(curGameInfo->mMode), GameModeFactory::getModeString(info.mMode));
+    else Logger::log("No gamemode info found\n");
     if (curGameInfo && curGameInfo->mMode == mMode) {
-        sead::ScopedCurrentHeapSetter heapSetter(GameModeManager::getSceneHeap());
         mInfo = (ManHuntInfo*)curGameInfo;
         mModeTimer = new GameModeTimer(mInfo->mHidingTime);
         Logger::log("Reinitialized timer with time %d:%.2d\n", mInfo->mHidingTime.mMinutes, mInfo->mHidingTime.mSeconds);
     } else {
-        if (curGameInfo) {
-            delete curGameInfo; // attempt to destory previous info before creating new one
-        }
-
+        if (curGameInfo) delete curGameInfo;  // attempt to destory previous info before creating new one
+        
         mInfo = GameModeManager::instance()->createModeInfo<ManHuntInfo>();
-
+        
         mModeTimer = new GameModeTimer();
     }
-
-    sead::ScopedCurrentHeapSetter heapSetterr(GameModeManager::getSceneHeap());
 
     mModeLayout = new ManHuntIcon("ManHuntIcon", *info.mLayoutInitInfo);
 
     mModeLayout->showSeeking();
 
     mModeTimer->disableTimer();
+
 }
 
-void ManHuntMode::processPacket(Packet* _packet) {
-    ManHuntPacket* packet     = (ManHuntPacket*)_packet;
-    ManHuntUpdateType      updateType = packet->updateType();
+void ManHuntMode::processPacket(Packet *packet) {
+    ManHuntPacket* tagPacket = (ManHuntPacket*)packet;
 
     // if the packet is for our player, edit info for our player
-    if (packet->mUserID == Client::getClientId()) {
-        if (updateType & ManHuntUpdateType::TIME) {
-            mInfo->mHidingTime.mMilliseconds = 0.0;
-            mInfo->mHidingTime.mSeconds      = packet->seconds;
-            mInfo->mHidingTime.mMinutes      = packet->minutes % 60;
-            mInfo->mHidingTime.mHours        = packet->minutes / 60;
-            mModeTimer->setTime(mInfo->mHidingTime);
+    if (tagPacket->mUserID == Client::getClientId() && GameModeManager::instance()->isMode(GameMode::MANHUNT)) {
+
+        ManHuntMode* mode = GameModeManager::instance()->getMode<ManHuntMode>();
+        ManHuntInfo* curInfo = GameModeManager::instance()->getInfo<ManHuntInfo>();
+
+        if (tagPacket->updateType & TagUpdateType::STATE) {
+            mode->setPlayerTagState(tagPacket->isIt);
         }
 
-        if (updateType & ManHuntUpdateType::STATE) {
-            updateTagState(packet->isIt);
-        } else if (updateType & ManHuntUpdateType::TIME) {
-            Client::sendGameModeInfPacket();
+        if (tagPacket->updateType & TagUpdateType::TIME) {
+            curInfo->mHidingTime.mSeconds = tagPacket->seconds;
+            curInfo->mHidingTime.mMinutes = tagPacket->minutes;
         }
 
         return;
+
     }
 
-    PuppetInfo* other = Client::findPuppetInfo(packet->mUserID, false);
-    if (!other) {
+    PuppetInfo* curInfo = Client::findPuppetInfo(tagPacket->mUserID, false);
+
+    if (!curInfo) {
         return;
     }
 
-    if (updateType & ManHuntUpdateType::STATE) {
-        other->isIt = packet->isIt;
-    }
-
-    if (updateType & ManHuntUpdateType::TIME) {
-        other->seconds = packet->seconds;
-        other->minutes = packet->minutes;
-    }
+    curInfo->isIt = tagPacket->isIt;
+    curInfo->seconds = tagPacket->seconds;
+    curInfo->minutes = tagPacket->minutes;
 }
 
-Packet* ManHuntMode::createPacket() {
-    if (!isModeActive()) {
-        DisabledGameModeInf* packet = new DisabledGameModeInf(Client::getClientId());
-        return packet;
-    }
+Packet *ManHuntMode::createPacket() {
 
-    ManHuntPacket* packet = new ManHuntPacket();
-    packet->mUserID    = Client::getClientId();
-    packet->isIt       = isPlayerHunting();
-    packet->seconds    = mInfo->mHidingTime.mSeconds;
-    packet->minutes    = mInfo->mHidingTime.mMinutes + mInfo->mHidingTime.mHours * 60;
-    packet->setUpdateType(static_cast<ManHuntUpdateType>(ManHuntUpdateType::STATE | ManHuntUpdateType::TIME));
+    ManHuntPacket *packet = new ManHuntPacket();
+
+    packet->mUserID = Client::getClientId();
+
+    packet->isIt = isPlayerHunting();
+
+    packet->minutes = mInfo->mHidingTime.mMinutes;
+    packet->seconds = mInfo->mHidingTime.mSeconds;
+    packet->updateType = static_cast<TagUpdateType>(TagUpdateType::STATE | TagUpdateType::TIME);
+
     return packet;
 }
 
@@ -136,13 +125,11 @@ void ManHuntMode::begin() {
     GameModeBase::begin();
 }
 
-void ManHuntMode::end() {
-    pause();
 
-    // Clean up spectator camera if active
-    if (mTicket && mTicket->mIsActive) {
-        al::endCamera(mCurScene, mTicket, 0, false);
-    }
+
+void ManHuntMode::end() {
+
+    pause();
 
     GameModeBase::end();
 }
@@ -158,13 +145,13 @@ void ManHuntMode::unpause() {
     GameModeBase::unpause();
 
     mModeLayout->appear();
-
-    if (isPlayerHunting()) {
-        mModeTimer->disableTimer();
-        mModeLayout->showSeeking();
-    } else {
+    
+    if (!mInfo->mIsPlayerIt) {
         mModeTimer->enableTimer();
         mModeLayout->showHiding();
+    } else {
+        mModeTimer->disableTimer();
+        mModeLayout->showSeeking();
     }
 }
 
@@ -205,10 +192,6 @@ void ManHuntMode::update() {
                 for (size_t i = 0; i < (size_t)mPuppetHolder->getSize(); i++) {
                     PuppetInfo* other = Client::getPuppetInfo(i);
                     if (!other || !other->isConnected || !other->isInSameStage) {
-                        continue;
-                    }
-
-                    if (other->gameMode != mMode && other->gameMode != GameMode::LEGACY) {
                         continue;
                     }
 
@@ -293,18 +276,19 @@ void ManHuntMode::update() {
 // }
 }
 
-
-bool ManHuntMode::showNameTag(PuppetInfo* other) {
-    return (
-        (other->gameMode != mMode && other->gameMode != GameMode::LEGACY)
-        || (isPlayerHunting() && other->manhuntIsHunting())
-        || (isPlayerRunning() && other->manhuntIsRunning())
-    );
-}
-
-void ManHuntMode::debugMenuControls(sead::TextWriter* gTextWriter) {
-    gTextWriter->printf("- L + ← | Enable/disable ManHunt \n");
-    gTextWriter->printf("-   ↑   | Switch between runner and hunter\n");
+bool ManHuntMode::isPlayerInSafeZone(al::LiveActor* player) {
+    if (!player) return false;
+    
+    // Get the Odyssey (barrier source)
+    PlayerActorBase* playerBase = rs::getPlayerActor(mCurScene);
+    if (!playerBase) return false;
+    
+    ShineTowerRocket* odyssey = rs::tryGetShineTowerRocketFromDemoDirector((al::LiveActor*)playerBase);
+    if (!odyssey) return false;
+    
+    // Check distance to Odyssey barrier (same distance used for barrier effect)
+    f32 distance = al::calcDistanceH(player, (al::LiveActor*)odyssey);
+    return distance < 2045.0f; // Same distance as in your update() method
 }
 
 void ManHuntMode::updateTagState(bool isHunting) {
@@ -331,52 +315,5 @@ void ManHuntMode::updateTagState(bool isHunting) {
         }
     }
 
-    Client::sendGameModeInfPacket();
-}
-
-void ManHuntMode::onBorderPullBackFirstStep(al::LiveActor* actor) {
-    if (isUseGravity()) {
-        killMainPlayer(actor);
-    }
-}
-
-bool ManHuntMode::isPlayerNearOdysseyBarrier(al::LiveActor* player) {
-    if (!player) return false;
-
-    PlayerActorBase* playerBase = rs::getPlayerActor(mCurScene);
-    if (!playerBase) return false;
-
-    ShineTowerRocket* odyssey = rs::tryGetShineTowerRocketFromDemoDirector((al::LiveActor*)playerBase);
-    if (!odyssey) return false;
-
-    sead::Vector3f odysseyPos = al::getTrans((al::LiveActor*)odyssey);
-    
-    // Check if the current player is a hider and within barrier range
-    if (player == (al::LiveActor*)playerBase) {
-        // This is the main player - check if they're hiding
-        if (!isPlayerHunting()) {
-            sead::Vector3f playerPos = al::getTrans(player);
-            f32 distance = vecDistance(playerPos, odysseyPos);
-            return distance < 2045.0f;
-        }
-    } else {
-        // This is a puppet - need to find their PuppetInfo to check if they're hiding
-        for (size_t i = 0; i < (size_t)mPuppetHolder->getSize(); i++) {
-            PuppetInfo* puppetInfo = Client::getPuppetInfo(i);
-            if (!puppetInfo || !puppetInfo->isConnected || !puppetInfo->isInSameStage) {
-                continue;
-            }
-            
-            // Check if this puppet corresponds to the player we're checking
-            // You might need to adjust this comparison based on how you identify puppets
-            if (puppetInfo->manhuntIsRunning()) {
-                f32 distance = vecDistance(puppetInfo->playerPos, odysseyPos);
-                if (distance < 2045.0f) {
-                    return true;
-                }
-            }
-        }
-    }
-    
-    return false;
+    Client::sendGamemodePacket();
 }

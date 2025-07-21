@@ -84,11 +84,9 @@ public:
     static bool isEnableCap(GameDataHolderAccessor);
     // enables cappy if not enabled already
     static void enableCap(GameDataHolderWriter);
-// In GameDataFunction
-static void disableCap(GameDataHolderWriter writer) {
-writer.mData->mGameDataFile->mIsEnableCap = false;
 
-    // Any other cleanup that might be needed when disabling cappy
+    static void disableCap(GameDataHolderWriter writer) {
+    writer.mData->mGameDataFile->mIsEnableCap = false;
 }
 
     // kills the player

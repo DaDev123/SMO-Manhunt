@@ -135,4 +135,3 @@ namespace {
     // custom nerves
     NERVE_IMPL(StageSceneStatePauseMenu, ServerConfig)
 }
-

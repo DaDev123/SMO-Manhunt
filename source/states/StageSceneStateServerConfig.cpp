@@ -61,19 +61,20 @@ StageSceneStateServerConfig::StageSceneStateServerConfig(
 
     // gamemode select menu
 
-    mModeSelect     = new SimpleLayoutMenu("GamemodeSelectMenu", "OptionSelect", initInfo, 0, false);
+    mModeSelect = new SimpleLayoutMenu("GamemodeSelectMenu", "OptionSelect", initInfo, 0, false);
     mModeSelectList = new CommonVerticalList(mModeSelect, initInfo, true);
 
     al::setPaneString(mModeSelect, "TxtOption", u"Gamemode Selection", 0);
 
-    const int modeCount = GameModeFactory::getModeCount() - 1;
+    const int modeCount = GameModeFactory::getModeCount();
 
     mModeSelectList->initDataNoResetSelected(modeCount);
 
-    auto* modeSelectOptions = new sead::SafeArray<sead::WFixedSafeString<0x200>, modeCount>();
+    sead::SafeArray<sead::WFixedSafeString<0x200>, modeCount>* modeSelectOptions =
+        new sead::SafeArray<sead::WFixedSafeString<0x200>, modeCount>();
 
     for (size_t i = 0; i < modeCount; i++) {
-        const char* modeName = GameModeFactory::getModeName(i + 1);
+        const char* modeName = GameModeFactory::getModeName(i);
         modeSelectOptions->mBuffer[i].convertFromMultiByteString(modeName, strlen(modeName));
     }
 
@@ -83,24 +84,19 @@ StageSceneStateServerConfig::StageSceneStateServerConfig(
     GameModeConfigMenuFactory factory("GameModeConfigFactory");
     for (int mode = 0; mode < factory.getMenuCount(); mode++) {
         GameModeEntry& entry = mGamemodeConfigMenus[mode];
-        const char*    name  = factory.getMenuName(mode);
-        Logger::log("Initializing GamemodeConfig %s in slot %d.\n", name, mode);
-
-        entry.mMenu   = factory.getCreator(name)(name);
+        const char* name = factory.getMenuName(mode);
+        entry.mMenu = factory.getCreator(name)(name);
         entry.mLayout = new SimpleLayoutMenu("GameModeConfigMenu", "OptionSelect", initInfo, 0, false);
-        entry.mList   = new CommonVerticalList(entry.mLayout, initInfo, true);
+        entry.mList = new CommonVerticalList(entry.mLayout, initInfo, true);
 
-        const char* modeName = GameModeFactory::getModeName(mode + 1);
-        int size = strlen(modeName) + 15;
-        char title[size];
-        strcpy(title, modeName);
-        strcat(title, " Configuration");
+        al::setPaneString(entry.mLayout, "TxtOption", u"Gamemode Configuration", 0);
 
-        char16_t title16[size];
-        std::copy(title, title + size, title16);
+        entry.mList->initDataNoResetSelected(entry.mMenu->getMenuSize());
 
-        al::setPaneString(entry.mLayout, "TxtOption", title16, 0);
+
+        entry.mList->addStringData(entry.mMenu->getStringData(), "TxtContent");
     }
+
 
     mCurrentList = mMainOptionsList;
     mCurrentMenu = mMainOptions;
@@ -256,58 +252,39 @@ void StageSceneStateServerConfig::exeToggleMusic() {
 
 void StageSceneStateServerConfig::exeGamemodeConfig() {
     if (al::isFirstStep(this)) {
-        mGamemodeConfigMenu = &mGamemodeConfigMenus[GameModeManager::instance()->getGameMode() - 1];
-
-        mGamemodeConfigMenu->mList->initDataNoResetSelected(mGamemodeConfigMenu->mMenu->getMenuSize());
-        mGamemodeConfigMenu->mList->addStringData(mGamemodeConfigMenu->mMenu->getStringData(), "TxtContent");
-
+        mGamemodeConfigMenu = &mGamemodeConfigMenus[GameModeManager::instance()->getGameMode()];
         mCurrentList = mGamemodeConfigMenu->mList;
         mCurrentMenu = mGamemodeConfigMenu->mLayout;
-
         subMenuStart();
     }
 
     subMenuUpdate();
 
     if (mIsDecideConfig && mCurrentList->isDecideEnd()) {
-        GameModeConfigMenu::UpdateAction action = mGamemodeConfigMenu->mMenu->updateMenu(mCurrentList->mCurSelected);
-        switch (action) {
-            case GameModeConfigMenu::UpdateAction::CLOSE: {
-                endSubMenu();
-                break;
-            }
-            case GameModeConfigMenu::UpdateAction::REFRESH: {
-                subMenuRefresh();
-                break;
-            }
-            case GameModeConfigMenu::UpdateAction::NOOP: {
-                activateInput();
-                break;
-            }
+        if (mGamemodeConfigMenu->mMenu->updateMenu(mCurrentList->mCurSelected)) {
+            endSubMenu();
         }
     }
 }
 
 void StageSceneStateServerConfig::exeGamemodeSelect() {
     if (al::isFirstStep(this)) {
-        mModeSelectList->mCurSelected = GameModeManager::instance()->getNextGameMode() - 1;
 
         mCurrentList = mModeSelectList;
         mCurrentMenu = mModeSelect;
 
         subMenuStart();
+
     }
 
     subMenuUpdate();
 
     if (mIsDecideConfig && mCurrentList->isDecideEnd()) {
-        Logger::log("Setting Server Mode to: %d\n", mCurrentList->mCurSelected + 1);
-        GameModeManager::instance()->setMode(static_cast<GameMode>(mCurrentList->mCurSelected + 1));
-        mainMenuRefresh();
+        Logger::log("Setting Server Mode to: %d\n", mCurrentList->mCurSelected);
+        GameModeManager::instance()->setMode(static_cast<GameMode>(mCurrentList->mCurSelected));
         endSubMenu();
     }
 }
-
 void StageSceneStateServerConfig::exeSaveData() {
     if (al::isFirstStep(this)) {
         SaveDataAccessFunction::startSaveDataWrite(mGameDataHolder);
@@ -400,7 +377,8 @@ const sead::WFixedSafeString<0x200>* StageSceneStateServerConfig::getMainMenuOpt
         : u"Hide Server in Debug (OFF)"
     );
 
-        mMainMenuOptions->mBuffer[ServerConfigOption::TOGGLEMUSIC].copy(
+    // "Play In-Game Music" option
+    mMainMenuOptions->mBuffer[ServerConfigOption::TOGGLEMUSIC].copy(
         Client::isMusicDisabled()
         ? u"Play In-Game Music (OFF)"
         : u"Play In-Game Music (ON)"
@@ -427,8 +405,8 @@ namespace {
     NERVE_IMPL(StageSceneStateServerConfig, MainMenu)
     NERVE_IMPL(StageSceneStateServerConfig, OpenKeyboardIP)
     NERVE_IMPL(StageSceneStateServerConfig, OpenKeyboardPort)
-    NERVE_IMPL(StageSceneStateServerConfig, HideServer)
     NERVE_IMPL(StageSceneStateServerConfig, ToggleMusic)
+    NERVE_IMPL(StageSceneStateServerConfig, HideServer)
     NERVE_IMPL(StageSceneStateServerConfig, GamemodeConfig)
     NERVE_IMPL(StageSceneStateServerConfig, GamemodeSelect)
     NERVE_IMPL(StageSceneStateServerConfig, SaveData)

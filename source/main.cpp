@@ -1,57 +1,48 @@
 #include "main.hpp"
-
 #include <cmath>
 #include <math.h>
-
-#include "actors/PuppetActor.h"
-
 #include "al/execute/ExecuteOrder.h"
 #include "al/execute/ExecuteTable.h"
 #include "al/execute/ExecuteTableHolderDraw.h"
+#include "al/util/GraphicsUtil.h"
+#include "container/seadSafeArray.h"
+#include "game/GameData/GameDataHolderAccessor.h"
+#include "game/Player/PlayerActorBase.h"
+#include "game/Player/PlayerActorHakoniwa.h"
+#include "game/Player/PlayerHackKeeper.h"
+#include "heap/seadHeap.h"
+#include "math/seadVector.h"
+#include "server/Client.hpp"
+#include "puppets/PuppetInfo.h"
+#include "actors/PuppetActor.h"
 #include "al/LiveActor/LiveActor.h"
 #include "al/util.hpp"
 #include "al/util/AudioUtil.h"
 #include "al/util/CameraUtil.h"
 #include "al/util/ControllerUtil.h"
-#include "al/util/GraphicsUtil.h"
 #include "al/util/LiveActorUtil.h"
 #include "al/util/NerveUtil.h"
-#include "al/util/DemoUtil.h"
-
 #include "debugMenu.hpp"
-
-#include "game/GameData/GameDataHolderAccessor.h"
 #include "game/GameData/GameDataFunction.h"
 #include "game/HakoniwaSequence/HakoniwaSequence.h"
-#include "game/Player/PlayerActorBase.h"
-#include "game/Player/PlayerActorHakoniwa.h"
 #include "game/Player/PlayerFunction.h"
-#include "game/Player/PlayerHackKeeper.h"
 #include "game/StageScene/StageScene.h"
-
 #include "helpers.hpp"
-
+#include "layouts/ManHuntIcon.h"
 #include "logger.hpp"
-
-#include "puppets/PuppetInfo.h"
-
-#include "sead/container/seadSafeArray.h"
-#include "sead/gfx/seadPrimitiveRenderer.h"
-#include "sead/heap/seadHeap.h"
-#include "sead/math/seadVector.h"
-
-#include "server/Client.hpp"
-#include "server/gamemode/GameModeBase.hpp"
-#include "server/gamemode/GameModeFactory.hpp"
-#include "server/gamemode/GameModeManager.hpp"
-
 #include "rs/util.hpp"
+#include "server/gamemode/GameModeBase.hpp"
+#include "server/manhunt/ManHuntMode.hpp"
+#include "server/gamemode/GameModeManager.hpp"
+#include "speedboot/SpeedbootLoad.hpp"
 
 static int pInfSendTimer = 0;
 static int gameInfSendTimer = 0;
 
 void updatePlayerInfo(GameDataHolderAccessor holder, PlayerActorBase* playerBase, bool isYukimaru) {
+    
     if (pInfSendTimer >= 3) {
+
         Client::sendPlayerInfPacket(playerBase, isYukimaru);
 
         if (!isYukimaru) {
@@ -64,12 +55,13 @@ void updatePlayerInfo(GameDataHolderAccessor holder, PlayerActorBase* playerBase
     }
 
     if (gameInfSendTimer >= 60) {
+
         if (isYukimaru) {
             Client::sendGameInfPacket(holder);
         } else {
             Client::sendGameInfPacket((PlayerActorHakoniwa*)playerBase, holder);
         }
-
+        
         gameInfSendTimer = 0;
     }
 
@@ -89,8 +81,11 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
     GameModeManager* gmm  = GameModeManager::instance();
     GameModeBase*    mode = gmm->getMode<GameModeBase>();
 
-    if (!mode || !mode->pauseTimeWhenPaused() || !gmm->isPaused()) {
-        Time::calcTime(); // this needs to be ran every frame, so running it here works
+    if(GameModeManager::instance()->isMode(GameMode::MANHUNT)) {
+        if(!GameModeManager::instance()->isPaused())
+            Time::calcTime();
+    } else {
+        Time::calcTime();  // this needs to be ran every frame, so running it here works
     }
 
     if (!debugMode) {
@@ -156,9 +151,9 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
     );
 
 #if EMU
-    gTextWriter->printf("Mod version: 1.0.0 for Emulators\n", TOSTRING(BUILDVERSTR));
+    gTextWriter->printf("Mod version: 1.2.0 for Emulators\n", TOSTRING(BUILDVERSTR));
 #else
-    gTextWriter->printf("Mod version: 1.0.0 for Switch\n", TOSTRING(BUILDVERSTR));
+    gTextWriter->printf("Mod version: 1.2.0 for Switch\n", TOSTRING(BUILDVERSTR));
 #endif
 
     al::Scene* curScene = curSequence->curScene;
@@ -200,7 +195,7 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                 if (debugPuppetIndex == 0) {
                     gTextWriter->printf("Player Name: %s\n",       Client::getClientName());
                     gTextWriter->printf("Connection Status: %s\n", isConnected ? "Online" : "Offline");
-                    gTextWriter->printf("Game mode: %i | %s\n",    gameMode, GameModeFactory::getModeName(gameMode));
+                    // gTextWriter->printf("Game mode: %i | %s\n",    gameMode, GameModeFactory::getModeName(gameMode));
                     gTextWriter->printf("Is in same Stage: Yes\n");
                     gTextWriter->printf("Stage: %s\n",            client->getLastGameInfPacket()->stageName);
                     gTextWriter->printf("Scenario: %u\n",         client->getLastGameInfPacket()->scenarioNo);
@@ -217,9 +212,6 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                         }
                     }
 
-                    if (gameModeBase) {
-                        gameModeBase->debugMenuPlayer(gTextWriter);
-                    }
                 } else if (curPuppet) {
                     al::LiveActor* curModel = curPuppet->getCurrentModel();
 
@@ -228,7 +220,7 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                     if (curModel && curPupInfo) {
                         gTextWriter->printf("Player Name: %s\n",       curPupInfo->puppetName);
                         gTextWriter->printf("Connection Status: %s\n", curPupInfo->isConnected ? "Online" : "Offline");
-                        gTextWriter->printf("Game mode: %i | %s\n",    curPupInfo->gameMode, GameModeFactory::getModeName(curPupInfo->gameMode));
+                        // gTextWriter->printf("Game mode: %i | %s\n",    curPupInfo->gameMode, GameModeFactory::getModeName(curPupInfo->gameMode));
                         gTextWriter->printf("Is in same Stage: %s\n",  curPupInfo->isInSameStage ? "Yes" : "No");
                         gTextWriter->printf("Stage: %s\n",             curPupInfo->stageName);
                         gTextWriter->printf("Scenario: %u\n",          curPupInfo->scenarioNo);
@@ -237,9 +229,6 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                         gTextWriter->printf("Animation:  %d  %s\n",    curPupInfo->curAnim, curPupInfo->curAnimStr);
                         if (!curPupInfo->isCaptured) {
                             gTextWriter->printf("Model Animation: %s\n", al::getActionName(curModel));
-                        }
-                        if (gameModeBase) {
-                            gameModeBase->debugMenuPlayer(gTextWriter, curPupInfo);
                         }
                     }
                 }
@@ -285,9 +274,6 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
         case 2:
             {
                 gTextWriter->printf("------------------- Controls --------------------\n\n");
-                if (gameModeBase) {
-                    gameModeBase->debugMenuControls(gTextWriter);
-                }
                 gTextWriter->printf("\n- ZR + ↑ | Open/close this debug menu\n");
             }
             break;
@@ -321,8 +307,11 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
 }
 
 void sendShinePacket(GameDataHolderAccessor thisPtr, Shine* curShine) {
+
     if (!curShine->isGot()) {
-        GameDataFile::HintInfo* curHintInfo = &thisPtr.mData->mGameDataFile->mShineHintList[curShine->mShineIdx];
+
+        GameDataFile::HintInfo* curHintInfo =
+            &thisPtr.mData->mGameDataFile->mShineHintList[curShine->mShineIdx];
 
         Client::sendShineCollectPacket(curHintInfo->mUniqueID);
     }
@@ -330,16 +319,10 @@ void sendShinePacket(GameDataHolderAccessor thisPtr, Shine* curShine) {
     GameDataFunction::setGotShine(thisPtr, curShine->curShineInfo);
 }
 
-void stageInitHook(
-    al::ActorInitInfo* info,
-    StageScene* curScene,
-    al::PlacementInfo const* placement,
-    al::LayoutInitInfo const* lytInfo,
-    al::ActorFactory const* factory,
-    al::SceneMsgCtrl* sceneMsgCtrl,
-    al::GameDataHolderBase* dataHolder
-) {
-    al::initActorInitInfo(info, curScene, placement, lytInfo, factory, sceneMsgCtrl, dataHolder);
+void stageInitHook(al::ActorInitInfo *info, StageScene *curScene, al::PlacementInfo const *placement, al::LayoutInitInfo const *lytInfo, al::ActorFactory const *factory, al::SceneMsgCtrl *sceneMsgCtrl, al::GameDataHolderBase *dataHolder) {
+
+    al::initActorInitInfo(info, curScene, placement, lytInfo, factory, sceneMsgCtrl,
+                          dataHolder);
 
     Client::clearArrays();
 
@@ -347,32 +330,29 @@ void stageInitHook(
 
     if (GameModeManager::instance()->getGameMode() != NONE) {
         GameModeInitInfo initModeInfo(info, curScene);
-        initModeInfo.initServerInfo(GameModeManager::instance()->getNextGameMode(), Client::getPuppetHolder());
+        initModeInfo.initServerInfo(GameModeManager::instance()->getGameMode(), Client::getPuppetHolder());
 
         GameModeManager::instance()->initScene(initModeInfo);
     }
 
     Client::sendGameInfPacket(info->mActorSceneInfo.mSceneObjHolder);
+
 }
 
-PlayerCostumeInfo* setPlayerModel(
-    al::LiveActor* player,
-    const al::ActorInitInfo& initInfo,
-    const char* bodyModel,
-    const char* capModel,
-    al::AudioKeeper* keeper,
-    bool isCloset
-) {
+PlayerCostumeInfo *setPlayerModel(al::LiveActor *player, const al::ActorInitInfo &initInfo, const char *bodyModel, const char *capModel, al::AudioKeeper *keeper, bool isCloset) {
     Client::sendCostumeInfPacket(bodyModel, capModel);
     return PlayerFunction::initMarioModelActor(player, initInfo, bodyModel, capModel, keeper, isCloset);
 }
 
 al::SequenceInitInfo* initInfo;
 
-ulong constructHook() { // hook for constructing anything we need to globally be accesible
-    asm("STR X21, [X19,#0x208]"); // stores WorldResourceLoader into HakoniwaSequence
+ulong constructHook() {  // hook for constructing anything we need to globally be accesible
 
-    asm("MOV %[result], X20" : [result] "=r"(initInfo)); // Save our scenes init info to a gloabl ptr so we can access it later
+    __asm("STR X21, [X19,#0x208]"); // stores WorldResourceLoader into HakoniwaSequence
+
+    __asm("MOV %[result], X20"
+          : [result] "=r"(
+              initInfo));  // Save our scenes init info to a gloabl ptr so we can access it later
 
     Client::createInstance(al::getCurrentHeap());
     GameModeManager::createInstance(al::getCurrentHeap()); // Create the GameModeManager on the current al heap
@@ -380,18 +360,11 @@ ulong constructHook() { // hook for constructing anything we need to globally be
     return 0x20;
 }
 
-bool threadInit(HakoniwaSequence* mainSeq) { // hook for initializing client class
+bool threadInit(HakoniwaSequence *mainSeq) {  // hook for initializing client class
+
     al::LayoutInitInfo lytInfo = al::LayoutInitInfo();
 
-    al::initLayoutInitInfo(
-        &lytInfo,
-        mainSeq->mLytKit,
-        0,
-        mainSeq->mAudioDirector,
-        initInfo->mSystemInfo->mLayoutSys,
-        initInfo->mSystemInfo->mMessageSys,
-        initInfo->mSystemInfo->mGamePadSys
-    );
+    al::initLayoutInitInfo(&lytInfo, mainSeq->mLytKit, 0, mainSeq->mAudioDirector, initInfo->mSystemInfo->mLayoutSys, initInfo->mSystemInfo->mMessageSys, initInfo->mSystemInfo->mGamePadSys);
 
     Client::instance()->init(lytInfo, mainSeq->mGameDataHolder);
 
@@ -401,11 +374,13 @@ bool threadInit(HakoniwaSequence* mainSeq) { // hook for initializing client cla
 bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
     StageScene* stageScene = (StageScene*)sequence->curScene;
 
+    static bool isCameraActive = false;
+
     bool isFirstStep = al::isFirstStep(sequence);
 
-    al::PlayerHolder* pHolder    = al::getScenePlayerHolder(stageScene);
-    PlayerActorBase*  playerBase = al::tryGetPlayerActor(pHolder, 0);
-
+    al::PlayerHolder *pHolder = al::getScenePlayerHolder(stageScene);
+    PlayerActorBase* playerBase = al::tryGetPlayerActor(pHolder, 0);
+    
     bool isYukimaru = !playerBase->getPlayerInfo();
 
     isInGame = !stageScene->isPause();
@@ -417,7 +392,7 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
 
     updatePlayerInfo(stageScene->mHolder, playerBase, isYukimaru);
 
-    static bool isDisableMusic = false;
+        static bool isDisableMusic = false;
 
     if (al::isPadHoldZR(-1)) {
         if (al::isPadTriggerUp(-1)) { // ZR + Up => Debug menu
@@ -452,31 +427,28 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
                 }
             }
         }
-        } else if (al::isPadHoldL(-1)) {
+    } else if (al::isPadHoldL(-1)) {
         if (al::isPadTriggerLeft(-1)) { // L + Left => Activate gamemode
             GameModeManager::instance()->toggleActive();
         }
+        if (al::isPadTriggerUp(-1)) { // L + Up => Disable background music
+            isDisableMusic = !isDisableMusic;
+        }
     }
 
-    if (Client::isMusicDisabled()) {
+    if (isDisableMusic) {
         if (al::isPlayingBgm(stageScene)) {
             al::stopAllBgm(stageScene, 0);
         }
     }
-
-    if (isFirstStep) {
-        GameModeBase* mode = GameModeManager::instance()->getMode<GameModeBase>();
-        if (mode) {
-            mode->onHakoniwaSequenceFirstStep(sequence);
-        }
-    }
-
     return isFirstStep;
+
 }
 
-void seadPrintHook(const char* fmt, ...) {
+void seadPrintHook(const char *fmt, ...)
+{
     va_list args;
-    va_start(args, fmt);
+	va_start(args, fmt);
 
     Logger::log(fmt, args);
 

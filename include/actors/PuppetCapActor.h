@@ -33,8 +33,6 @@ class PuppetCapActor : public al::LiveActor {
         HackCapJointControlKeeper* mJointKeeper;
         PuppetInfo* mInfo;
         nn::account::Uid mUserID;
-        bool mCapDamageEnabled = true;
         bool mIsInvincible = false;
         float mInvincibleTimer = 0.0f;  // ← Add this line
-        bool mWasNearBarrier = false; // Just to track last-frame barrier state
 };
