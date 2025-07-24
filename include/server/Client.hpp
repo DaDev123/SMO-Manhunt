@@ -84,6 +84,8 @@ class Client {
     public:
         Client();
 
+        static Client* get();
+
         void init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor holder);
 
         bool startThread();
@@ -184,6 +186,8 @@ class Client {
         static Shine* findStageShine(int shineID);
 
         static void updateShines();
+
+        GameDataHolderAccessor& getHolder() { return mHolder; }
 
         static bool openKeyboardIP();
         static bool openKeyboardPort();

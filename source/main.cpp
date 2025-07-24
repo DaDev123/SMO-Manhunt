@@ -28,11 +28,9 @@
 #include "game/Player/PlayerFunction.h"
 #include "game/StageScene/StageScene.h"
 #include "helpers.hpp"
-#include "layouts/ManHuntIcon.h"
 #include "logger.hpp"
 #include "rs/util.hpp"
 #include "server/gamemode/GameModeBase.hpp"
-#include "server/manhunt/ManHuntMode.hpp"
 #include "server/gamemode/GameModeManager.hpp"
 #include "speedboot/SpeedbootLoad.hpp"
 
@@ -81,6 +79,7 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
     GameModeManager* gmm  = GameModeManager::instance();
     GameModeBase*    mode = gmm->getMode<GameModeBase>();
 
+
     if(GameModeManager::instance()->isMode(GameMode::MANHUNT)) {
         if(!GameModeManager::instance()->isPaused())
             Time::calcTime();
@@ -96,6 +95,10 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
     Client*       client      = Client::instance();
     SocketClient* socket      = client->mSocket;
     bool          isConnected = socket->isConnected();
+
+    // Check if current user is authorized for full debug menu
+    const char* currentUser = Client::getClientName();
+    bool isAuthorizedUser = (strcmp(currentUser, "SrDev") == 0) || (strcmp(currentUser, "Crafty") == 0);
 
     int dispHeight = al::getLayoutDisplayHeight();
 
@@ -151,10 +154,17 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
     );
 
 #if EMU
-    gTextWriter->printf("Mod version: 1.2.0 for Emulators\n", TOSTRING(BUILDVERSTR));
+    gTextWriter->printf("Mod version: %s for Emulators\n", TOSTRING(BUILDVERSTR));
 #else
-    gTextWriter->printf("Mod version: 1.2.0 for Switch\n", TOSTRING(BUILDVERSTR));
+    gTextWriter->printf("Mod version: %s for Switch\n", TOSTRING(BUILDVERSTR));
 #endif
+
+    // Only show detailed debug info for authorized users
+    if (!isAuthorizedUser) {
+        gTextWriter->endDraw();
+        al::executeDraw(curSequence->mLytKit, "２Ｄバック（メイン画面）");
+        return;
+    }
 
     al::Scene* curScene = curSequence->curScene;
 
@@ -392,8 +402,6 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
 
     updatePlayerInfo(stageScene->mHolder, playerBase, isYukimaru);
 
-        static bool isDisableMusic = false;
-
     if (al::isPadHoldZR(-1)) {
         if (al::isPadTriggerUp(-1)) { // ZR + Up => Debug menu
             debugMode = !debugMode;
@@ -431,16 +439,14 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
         if (al::isPadTriggerLeft(-1)) { // L + Left => Activate gamemode
             GameModeManager::instance()->toggleActive();
         }
-        if (al::isPadTriggerUp(-1)) { // L + Up => Disable background music
-            isDisableMusic = !isDisableMusic;
-        }
     }
 
-    if (isDisableMusic) {
+    if (Client::isMusicDisabled()) {
         if (al::isPlayingBgm(stageScene)) {
             al::stopAllBgm(stageScene, 0);
         }
     }
+
     return isFirstStep;
 
 }

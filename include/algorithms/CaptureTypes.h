@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstddef>
+#include <cstdint>
 #include "crc32.h"
 #include "basis/seadTypes.h"
 
@@ -41,14 +41,19 @@ namespace CaptureTypes {
         TRexPatrol,
         Imomu, 
         SenobiGeneratePoint,
+        JugemFishing,
+        Statue,
+        Fukankun,
+        HackFork,
+        Yoshi,
         End
     };
 
-    static constexpr size_t ToValue(Type type) { return static_cast<std::uint16_t>(type); }
+    static constexpr size_t ToValue(Type type) { return static_cast<size_t>(type); }
 
     static constexpr Type ToType(std::uint16_t value) {return static_cast<Type>(value);}
 
-    static constexpr std::array<const char*, ToValue(Type::End)> s_Strs {
+    static constexpr std::array<const char*, 38> s_Strs {
         "AnagramAlphabetCharacter",
         "Byugo", 
         "Bubble", 
@@ -81,7 +86,12 @@ namespace CaptureTypes {
         "TRexSleep",
         "TRexPatrol",
         "Imomu", 
-        "SenobiGeneratePoint"
+        "SenobiGeneratePoint",
+        "JugemFishing",
+        "Statue",
+        "Fukankun",
+        "HackFork",
+        "Yoshi"
     };
 
     // these ifdefs are really dumb but it makes clangd happy so /shrug

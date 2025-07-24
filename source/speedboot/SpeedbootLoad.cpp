@@ -1,132 +1,159 @@
 #include "speedboot/SpeedbootLoad.hpp"
-#include "al/layout/LayoutActor.h"
+#include "server/DeltaTime.hpp"
 #include "al/util.hpp"
 #include "al/util/LayoutUtil.h"
-#include "al/util/LiveActorUtil.h"
-#include "al/util/MathUtil.h"
 #include "al/util/NerveUtil.h"
 #include "game/WorldList/WorldResourceLoader.h"
 #include "gfx/seadColor.h"
 #include "logger.hpp"
 #include "math/seadMathCalcCommon.h"
-#include "math/seadVector.h"
-#include "prim/seadSafeString.h"
-#include "server/DeltaTime.hpp"
+#include "server/Client.hpp"
+#include "game/SaveData/SaveDataAccessFunction.h"
+
+// Forward declare the nerve classes
+namespace {
+    NERVE_HEADER(SpeedbootLoad, Appear)
+    NERVE_HEADER(SpeedbootLoad, Wait)
+    NERVE_HEADER(SpeedbootLoad, Decrease)
+    NERVE_HEADER(SpeedbootLoad, End)
+}
 
 SpeedbootLoad::SpeedbootLoad(WorldResourceLoader* resourceLoader, const al::LayoutInitInfo& initInfo)
-    : al::LayoutActor("SpeedbootLoad")
-    , worldResourceLoader(resourceLoader)
-{
+    : al::LayoutActor("SpeedbootLoad"), worldResourceLoader(resourceLoader) {
     al::initLayoutActor(this, initInfo, "SpeedbootLoad", nullptr);
     initNerve(&nrvSpeedbootLoadAppear, 0);
-    // al::setPaneLocalScale(this, "All", { 5.0f, 5.0f });
     appear();
 }
 
-void SpeedbootLoad::exeAppear()
-{
-    if (al::isFirstStep(this)) {
+void SpeedbootLoad::exeAppear() {
+    if (al::isFirstStep(this))
         al::startAction(this, "Appear", nullptr);
-    }
-
-    if (al::isActionEnd(this, nullptr)) {
+    if (al::isActionEnd(this, nullptr))
         al::setNerve(this, &nrvSpeedbootLoadWait);
-    }
 }
 
-void SpeedbootLoad::exeWait()
-{
-    if (al::isActionEnd(this, nullptr)) {
+void SpeedbootLoad::exeWait() {
+    if (al::isActionEnd(this, nullptr))
         al::setNerve(this, &nrvSpeedbootLoadDecrease);
-    }
 }
 
-void SpeedbootLoad::exeDecrease()
-{
-    mTime += 0.016666f;
+void SpeedbootLoad::exeDecrease() {
+    al::setPaneString(this, "TxtTip", u"Change Server IP/Port: Press +", 0);
+    al::setPaneString(this, "TxtName", u"ManHunt", 0);
+
+    if (al::isPadTriggerPlus(-1)) {
+        Logger::log("Plus button pressed. Opening keyboard for IP and Port input.\n");
+
+        if (Client* client = Client::get()) {
+            Client::getKeyboard()->setHeaderText(u"Set Server IP");
+            Client::getKeyboard()->setSubText(u"Enter IP Address below:");
+            Client::openKeyboardIP();
+
+            Client::getKeyboard()->setHeaderText(u"Set Server Port");
+            Client::getKeyboard()->setSubText(u"Enter Port below:");
+            Client::openKeyboardPort();
+
+            SaveDataAccessFunction::startSaveDataWrite(client->getHolder().mData);
+            client->restartConnection();
+
+            mHasConnected = true;
+            mConnectionDisplayTimer = 0.0f;
+
+            al::setPaneLocalAlpha(this, "ConnectingGlobe", 1.0f);
+            al::setPaneLocalAlpha(this, "ConnectingArrows", 1.0f);
+            al::setPaneVtxColor(this, "TxtConnecting", sead::Color4u8{255, 255, 255, 255});
+            al::setPaneString(this, "TxtConnecting", u"Restarted Connection!", 0);
+        }
+    }
 
     mProgression = worldResourceLoader->calcLoadPercent() / 100.0f;
 
-    float rotation = cosf(mTime) * 3;
+    sead::Color4u8 fixedColor = {0, 0, 139, 255};
+    mRotTime += 0.03f;
+    float rotation = cosf(mRotTime) * 5;
 
-    // Debug stuff
-    sead::WFormatFixedSafeString<0x40> string(u"Time: %.02f\nSine Value: %.02f", mTime, rotation);
-    al::setPaneString(this, "TxtDebug", string.cstr(), 0);
+    sead::WFormatFixedSafeString<0x40> debugString(u"Display Time: %.02f\nSin Value: %.02f", mRotTime, rotation);
+    al::setPaneString(this, "TxtDebug", debugString.cstr(), 0);
 
-    if (mProgression < 1.f) {
+    float arrowRotation = -mRotTime * 75.0f;
+    al::setPaneLocalRotate(this, "ConnectingArrows", { 0.0f, 0.0f, arrowRotation });
 
-        // Target setup
-        if (mTime < 7.f) {
-            mOnlineLogoScaleTarget = 1.f;
-            mOnlineLogoTransTarget = { 0.f, 0.f };
-
-            mFreezeLogoTransXTarget = 1000.f;
-
-            mFreezeBorderTarget = sead::Vector2f(700.f, 420.f);
-
-            mFreezeBGTransXTarget = 0.f;
+    // --- Connection status display ---
+    if (!mHasConnected) {
+        if (Client::isSocketActive()) {
+            mHasConnected = true;
+            mConnectionDisplayTimer = 0.0f;
+            al::setPaneString(this, "TxtConnecting", u"Server Connected!", 0);
         } else {
-            mOnlineLogoScaleTarget = 0.3f;
-            mOnlineLogoTransTarget = { -520.f, 260.f };
+            mDotTimer += 1.0f / 60.0f;
+            if (mDotTimer >= 0.5f) {
+                mConnectingDotState = (mConnectingDotState + 1) % 4;
+                mDotTimer = 0.0f;
+            }
 
-            mFreezeLogoTransXTarget = 0.f;
-
-            mFreezeBorderTarget = sead::Vector2f(640.f, 360.f);
-
-            mFreezeBGTransXTarget = -1280.f;
+            const char16_t* dots[] = {
+                u"Connecting to server",
+                u"Connecting to server.",
+                u"Connecting to server..",
+                u"Connecting to server..."
+            };
+            al::setPaneString(this, "TxtConnecting", dots[mConnectingDotState], 0);
         }
-
-        // Online logo part //
-
-        mOnlineLogoScale = al::lerpValue(mOnlineLogoScale, mOnlineLogoScaleTarget, 0.04f);
-        mOnlineLogoTrans.x = al::lerpValue(mOnlineLogoTrans.x, mOnlineLogoTransTarget.x, 0.04f);
-        mOnlineLogoTrans.y = al::lerpValue(mOnlineLogoTrans.y, mOnlineLogoTransTarget.y, 0.04f);
-
-        al::setPaneLocalScale(this, "PartOnlineLogo", { mOnlineLogoScale, mOnlineLogoScale });
-        al::setPaneLocalTrans(this, "PartOnlineLogo", mOnlineLogoTrans);
-
-        // Freeze logo part //
-
-        mFreezeLogoTransX = al::lerpValue(mFreezeLogoTransX, mFreezeLogoTransXTarget, 0.02f);
-
-        al::setPaneLocalTrans(this, "FreezeLogoRoot", { mFreezeLogoTransX, 0.f });
-        al::setPaneLocalRotate(this, "PicFreezeLogo", { 0.f, 0.f, rotation });
-
-        // Freeze borders //
-
-        mFreezeBorder.x = al::lerpValue(mFreezeBorder.x, mFreezeBorderTarget.x, 0.01f);
-        mFreezeBorder.y = al::lerpValue(mFreezeBorder.y, mFreezeBorderTarget.y, 0.01f);
-
-        al::setPaneLocalTrans(this, "PicFreezeEdgeLeft", { -mFreezeBorder.x, 0.f });
-        al::setPaneLocalTrans(this, "PicFreezeEdgeRight", { mFreezeBorder.x, 0.f });
-        al::setPaneLocalTrans(this, "PicFreezeEdgeTop", { 0.f, mFreezeBorder.y });
-        al::setPaneLocalTrans(this, "PicFreezeEdgeBot", { 0.f, -mFreezeBorder.y });
-
-        // Freeze BG //
-        mFreezeBGTransX = al::lerpValue(mFreezeBGTransX, mFreezeBGTransXTarget, 0.02f);
-
-        al::setPaneLocalTrans(this, "BackgroundsRoot", { mFreezeBGTransX, 0.f });
+        al::setPaneVtxColor(this, "TxtConnecting", sead::Color4u8{255, 255, 255, 255});
+    } else {
+        mConnectionDisplayTimer += 1.0f / 60.0f;
+        if (mConnectionDisplayTimer > 2.0f) {
+            float fade = sead::Mathf::clamp(1.0f - (mConnectionDisplayTimer - 2.0f) / 0.4f, 0.0f, 1.0f);
+            u8 alpha = static_cast<u8>(fade * 255);
+            al::setPaneVtxColor(this, "TxtConnecting", sead::Color4u8{255, 255, 255, alpha});
+            al::setPaneLocalAlpha(this, "ConnectingGlobe", fade);
+            al::setPaneLocalAlpha(this, "ConnectingArrows", fade);
+        }
     }
 
-    if (mProgression > 1.f) {
+    // --- Loading dots animation ---
+    mDotTimer += 1.0f / 60.0f;
+    if (mDotTimer >= 0.5f) {
+        mLoadingDotState = (mLoadingDotState + 1) % 4;
+        mDotTimer = 0.0f;
+    }
+
+    const char16_t* loadingDots[] = {
+        u"Loading",
+        u"Loading.",
+        u"Loading..",
+        u"Loading..."
+    };
+    al::setPaneString(this, "TxtLoading", loadingDots[mLoadingDotState], 0);
+    al::setPaneVtxColor(this, "TxtLoading", sead::Color4u8{255, 255, 255, 255});
+
+    // --- Progress visuals ---
+    if (mProgression < 1.0f) {
+        al::setPaneLocalScale(this, "PicBar", { mProgression, 2.f });
+        al::setPaneLocalScale(this, "PicBarFill", { 30.f, 1.f });
+
+        al::setPaneVtxColor(this, "PicBar", fixedColor);
+        al::setPaneVtxColor(this, "PicBarFill", fixedColor);
+
+        al::setPaneLocalRotate(this, "PicMoon", { 0.f, 0.f, rotation });
+        al::setPaneLocalRotate(this, "Arrows", { 0.f, 0.f, arrowRotation });
+        al::setPaneLocalRotate(this, "PicBG", { 0.f, 0.f, mRotTime * -3.f });
+    }
+
+    if (mProgression > 1.0f)
         al::setNerve(this, &nrvSpeedbootLoadEnd);
-    }
 }
 
-void SpeedbootLoad::exeEnd()
-{
-    if (al::isFirstStep(this)) {
+void SpeedbootLoad::exeEnd() {
+    if (al::isFirstStep(this))
         al::startAction(this, "End", nullptr);
-    }
-
-    if (al::isActionEnd(this, nullptr)) {
+    if (al::isActionEnd(this, nullptr))
         kill();
-    }
 }
 
 namespace {
-NERVE_IMPL(SpeedbootLoad, Appear)
-NERVE_IMPL(SpeedbootLoad, Wait)
-NERVE_IMPL(SpeedbootLoad, Decrease)
-NERVE_IMPL(SpeedbootLoad, End)
-} // namespace
+    NERVE_IMPL(SpeedbootLoad, Appear)
+    NERVE_IMPL(SpeedbootLoad, Wait)
+    NERVE_IMPL(SpeedbootLoad, Decrease)
+    NERVE_IMPL(SpeedbootLoad, End)
+}

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
-#include <cstring>
+#include <string_view>
+#include <array>
 #include "types.h"
 
 #include "sead/math/seadVector.h"
@@ -35,10 +35,11 @@ bool isInCostumeList(const char *costumeName);
 const char *tryGetPuppetCapName(PuppetInfo *info);
 const char* tryGetPuppetBodyName(PuppetInfo* info);
 
-const char* tryConvertName(const char* className);
-
 void killMainPlayer(al::LiveActor* actor);
 void killMainPlayer(PlayerActorHakoniwa* mainPlayer);
+
+const char* tryConvertName(const char* className);
+const char* convertCaptureHackName(const char* hackName);
 
 __attribute__((used)) static const char* costumeNames[] = {
     "Mario",
@@ -94,6 +95,9 @@ struct HackActorName {
 // attribute otherwise the build log is spammed with unused warnings
 __attribute__((used)) static HackActorName classHackNames[] = {
     {"SenobiGeneratePoint", "Senobi"},
+    {"JugemFishing", "Jugem"},
+    {"Yoshi", "YoshiModel"},
+    {"Statue", "StatueJizo"},
     {"KuriboPossessed", "Kuribo"},
     {"KillerLauncher", "Killer"},
     {"KillerLauncherMagnum", "KillerMagnum"},
@@ -102,9 +106,8 @@ __attribute__((used)) static HackActorName classHackNames[] = {
     {"ElectricWire", "ElectricWireMover"},
     {"TRexSleep", "TRex"},
     {"TRexPatrol", "TRex"},
-    {"WanwanBig", "Wanwan"},  // FIXME: this will make chain chomp captures always be the small
-                              // variant for syncing
-    {"Koopa","KoopaHack"}
+    {"Koopa","KoopaHack"},
+    {"PukupukuSnow", "Pukupuku"},  // Maps PukupukuSnow to same hack name as Pukupuku for syncing
 };
 
 struct Transform

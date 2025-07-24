@@ -38,11 +38,19 @@ emu:
 	$(MAKE) all -f MakefileNSO SMOVER=$(SMOVER) BUILDVERSTR=$(BUILDVERSTR) BUILDVER=$(BUILDVER) EMU=1
 	$(MAKE) starlight_patch_$(SMOVER)/*.ips
 
-	mkdir -p starlight_patch_$(SMOVER)/yuzu/
+	# Create emulator folder structure under starlight_patch_$(SMOVER)
+	@mkdir -p starlight_patch_$(SMOVER)/SMOManHunt-Emulator/exefs
+	@mkdir -p starlight_patch_$(SMOVER)/SMOManHunt-Emulator/romfs
 
-	mv starlight_patch_$(SMOVER)/3CA12DFAAF9C82DA064D1698DF79CDA1.ips starlight_patch_$(SMOVER)/yuzu/3CA12DFAAF9C82DA064D1698DF79CDA1.ips
-	mv $(shell basename $(CURDIR))$(SMOVER).elf starlight_patch_$(SMOVER)/subsdk1.elf
-	mv $(shell basename $(CURDIR))$(SMOVER).nso starlight_patch_$(SMOVER)/yuzu/subsdk1
+	# Move exefs files
+	@mv starlight_patch_$(SMOVER)/3CA12DFAAF9C82DA064D1698DF79CDA1.ips starlight_patch_$(SMOVER)/SMOManHunt-Emulator/exefs/
+	@mv $(shell basename $(CURDIR))$(SMOVER).nso starlight_patch_$(SMOVER)/SMOManHunt-Emulator/exefs/subsdk1
+
+	# Copy romfs
+	@cp -r romfs/* starlight_patch_$(SMOVER)/SMOManHunt-Emulator/romfs/ || true
+
+
+
 # builds and sends project to FTP server hosted on provided IP
 send: all
 	python3.8 scripts/sendPatch.py $(IP) $(PROJNAME) 

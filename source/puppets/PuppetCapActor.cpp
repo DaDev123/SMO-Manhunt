@@ -15,6 +15,8 @@
 #include "game/System/GameSystem.h"
 #include "server/DeltaTime.hpp"
 
+#include "server/manhunt/CapDamageHandler.h"
+
 PuppetCapActor::PuppetCapActor(const char* name) : al::LiveActor(name) {
     mIsInvincible = false;
     mInvincibleTimer = 0.0f;
@@ -113,87 +115,23 @@ void PuppetCapActor::update() {
 }
 
 void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver) {
-    
-    auto* curSeq = (HakoniwaSequence*) GameSystemFunction::getGameSystem()->mSequence;
-    if (!curSeq || !curSeq->curScene) return;
-    StageScene* stageScene = (StageScene*) curSeq->curScene;
-    ManHuntMode* hnsMode = GameModeManager::instance()->getMode<ManHuntMode>();
-
-    al::PlayerHolder* pHolder = al::getScenePlayerHolder(stageScene);
-    PlayerActorBase* playerBase = al::tryGetPlayerActor(pHolder, 0);
-    auto* player = dynamic_cast<PlayerActorHakoniwa*>(playerBase);
-    if (!player) return;
-    
+    // Handle push interactions
     if (al::isSensorPlayer(receiver) && al::isSensorName(sender, "Push")) {
         rs::sendMsgPushToPlayer(receiver, sender);
+        return;
     }
 
-    // Handle cap-only damage for seeker vs hider combat
-    if (al::isSensorPlayer(receiver) && al::isSensorName(sender, "Attack")) {
-        // Check if we're in Hide and Seek mode
-        if (GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT)) {
-            ManHuntMode* hnsMode = GameModeManager::instance()->getMode<ManHuntMode>();
-            
-        auto* targetPlayerHako = dynamic_cast<PlayerActorHakoniwa*>(player);
-        if (targetPlayerHako && targetPlayerHako->mHackKeeper && 
-            targetPlayerHako->mHackKeeper->currentHackActor) {
-            const char* hackName = targetPlayerHako->mHackKeeper->getCurrentHackName();
-            if (hackName && strcmp(hackName, "Tank") == 0) {
-                return;
-            }
-        }
-
-
-            if (mIsInvincible) return;
-            if (hnsMode && mInfo) {
-                // Get cap owner's role
-                bool capOwnerIsSeeker = mInfo->isIt;
-                
-                // Get target's role - assume if it's hitting local player
-                bool targetIsSeeker = hnsMode->isPlayerHunting();
-                
-                // Simple cross-team validation
-                // Only allow damage if roles are different (seeker vs hider or hider vs seeker)
-                if (capOwnerIsSeeker != targetIsSeeker) {
-                    
-                    // If cap owner is a hider, check if they're in safe zone
-                    if (!capOwnerIsSeeker) { // Cap owner is hider/runner
-                        // Find the cap owner's puppet by iterating through all puppets
-                        PuppetHolder* puppetHolder = Client::getPuppetHolder();
-                        if (puppetHolder) {
-                            for (int i = 0; i < puppetHolder->getSize(); i++) {
-                                PuppetActor* puppet = puppetHolder->getPuppetActor(i);
-                                if (puppet && puppet->getInfo() && 
-                                    puppet->getInfo()->playerID == mInfo->playerID) {
-                                    // Found the cap owner's puppet
-                                    if (hnsMode->isPlayerInSafeZone(puppet)) {
-                                        return; // Cap owner (hider) is in safe zone, can't deal damage
-                                    }
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    
-                    // If target is a hider, check if they're in safe zone
-                    if (!targetIsSeeker) { // Target is hider/runner
-                        al::LiveActor* targetActor = al::getSensorHost(receiver);
-                        if (targetActor && hnsMode->isPlayerInSafeZone(targetActor)) {
-                            return; // Hider is in safe zone, no damage
-                        }
-                    }
-                    
-                    // Send enemy attack message for cap damage
-                    al::sendMsgEnemyAttack(receiver, sender);
-                }
-            }
-        }
-    }
+    // Handle cap damage
+    CapDamageHandler::handleCapDamage(sender, receiver, mInfo, mIsInvincible);
 }
 
 bool PuppetCapActor::receiveMsg(const al::SensorMsg* msg, al::HitSensor* sender,
                              al::HitSensor* receiver) {
 
+    // try to use gamemode recieve logic, otherwise fallback to default behavior
+    if (GameModeManager::tryReceiveCapMsg(msg, sender, receiver)) {
+        return true;
+    }
 
     if (al::isMsgPlayerDisregard(msg)) {
         return true;

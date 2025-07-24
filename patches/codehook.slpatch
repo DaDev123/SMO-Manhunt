@@ -133,6 +133,11 @@ B59E28 B seadPrintHook // sead::system::print
 25ff74 MOV X0, #1
 25ffac MOV X0, #0
 
+// speedbooter hooks
+50ef28 BL speedboot::hakoniwaSetNerveSetup
+50eb88 ORR w2, wzr, #0x1f // nerve state count
+50eb64 BL speedboot::prepareLayoutInitInfo
+
 // MannHunt Patches + Demo Skip Patches
 
 43f83c NOP

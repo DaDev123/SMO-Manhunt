@@ -57,6 +57,10 @@ static bool debugMode = false;
 
 constexpr const char* captureNames[] = {
     "AnagramAlphabetCharacter", "Byugo", "Bubble", "Bull", "Car", "ElectricWire",
+    "JugemFishing",
+    "Statue",
+    "Fukankun",
+    "Yoshi",
     "KillerLauncherMagnum", "KuriboPossessed",
     "WanwanBig",  // has sub-actors
     "KillerLauncher", "Koopa",
@@ -66,8 +70,5 @@ constexpr const char* captureNames[] = {
     "FireBrosPossessed", "PackunFire", "Frog", "Kakku", "Hosui", "HammerBrosPossessed", "Megane",
     "KaronWing", "KuriboWing", "PackunPoison", "Radicon", "Tank", "Tsukkun", "TRex", "TRexSleep",
     "TRexPatrol",
-    // "Yukimaru", (is a player actor)
     "Imomu", "SenobiGeneratePoint"
-    // "HackFork",
-    // "Yoshi" (is a player actor)
 };

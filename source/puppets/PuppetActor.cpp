@@ -213,16 +213,23 @@ void PuppetActor::control() {
                 mNameTag->appear();
 
         if (mNameTag && GameModeManager::instance()->isActive()) {
-            GameMode curMode = GameModeManager::instance()->getGameMode();
-            switch(curMode) {
-                case GameMode::MANHUNT:
-                    mNameTag->mIsAlive = GameModeManager::instance()->getMode<ManHuntMode>()->isPlayerHunting() && mInfo->isIt;
-                    break;
-                default:
-                    Logger::log("Name tag display failed due to unknown active game mode!\n");
-                    break;
-            };
+    GameMode curMode = GameModeManager::instance()->getGameMode();
+    switch(curMode) {
+        case GameMode::MANHUNT: {
+            ManHuntMode* manhuntMode = GameModeManager::instance()->getMode<ManHuntMode>();
+            bool isLocalPlayerIt = manhuntMode->isPlayerHunting();
+            bool isTargetPlayerIt = mInfo->isIt;
+            
+            // Show nametag if both players have the same "it" status
+            mNameTag->mIsAlive = (isLocalPlayerIt && isTargetPlayerIt) || 
+                               (!isLocalPlayerIt && !isTargetPlayerIt);
+            break;
         }
+        default:
+            Logger::log("Name tag display failed due to unknown active game mode!\n");
+            break;
+    };
+}
 
         // Sub-Actor Updating
 
