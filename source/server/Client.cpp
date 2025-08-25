@@ -1192,41 +1192,41 @@ void Client::updateShines() {
     sInstance->mCurStageScene->mSceneLayout->updateCounterParts(); // updates shine chip layout to (maybe) prevent softlocks
 }
 
-void Client::sendPuppetInfoPacket() {
-    if (!sInstance) {
-        Logger::log("Static Instance is Null!\n");
-        return;
-    }
-    
-    if (!sInstance->mCurStageScene) {
-        Logger::log("Current Stage Scene is Null!\n");
-        return;
-    }
-    
-    // Get current player
-    PlayerActorBase* playerBase = rs::getPlayerActor(sInstance->mCurStageScene);
-    if (!playerBase) {
-        Logger::log("Player Actor is Null!\n");
-        return;
-    }
-    
-    // Send player info packet
-    bool isYukimaru = false; // Default to false for now
-    sendPlayerInfPacket(playerBase, isYukimaru);
-    
-    // Cast to PlayerActorHakoniwa to access hack cap
-    PlayerActorHakoniwa* player = (PlayerActorHakoniwa*)playerBase;
-    
-    // Get the hack cap from the player and send hack cap packet
-    HackCap* hackCap = player->mHackCap;
-    if (!hackCap) {
-        Logger::log("Hack Cap is Null!\n");
-        return;
-    }
-    
-    sendHackCapInfPacket(hackCap);
-    sendGamemodePacket();
-}
+//void Client::sendPuppetInfoPacket() {
+//    if (!sInstance) {
+//        Logger::log("Static Instance is Null!\n");
+//        return;
+//    }
+//    
+//    if (!sInstance->mCurStageScene) {
+//        Logger::log("Current Stage Scene is Null!\n");
+//        return;
+//    }
+//    
+//    // Get current player
+//    PlayerActorBase* playerBase = rs::getPlayerActor(sInstance->mCurStageScene);
+//    if (!playerBase) {
+//        Logger::log("Player Actor is Null!\n");
+//        return;
+//    }
+//    
+//    // Send player info packet
+//    bool isYukimaru = false; // Default to false for now
+//    sendPlayerInfPacket(playerBase, isYukimaru);
+//    
+//    // Cast to PlayerActorHakoniwa to access hack cap
+//    PlayerActorHakoniwa* player = (PlayerActorHakoniwa*)playerBase;
+//    
+//    // Get the hack cap from the player and send hack cap packet
+//    HackCap* hackCap = player->mHackCap;
+//    if (!hackCap) {
+//        Logger::log("Hack Cap is Null!\n");
+//        return;
+//    }
+//    
+//    sendHackCapInfPacket(hackCap);
+//    sendGamemodePacket();
+//}
 
 void Client::update() {
     if (sInstance) {
@@ -1237,7 +1237,7 @@ void Client::update() {
         }
 
         GameModeManager::instance()->update();
-        sendPuppetInfoPacket();
+        //sendPuppetInfoPacket();
     }
 }
 
