@@ -13,7 +13,7 @@ endif
 
 SMOVER ?= 100
 BUILDVER ?= 101
-BUILDVERSTR ?= 1.4.0
+BUILDVERSTR ?= 1.3.0
 IP ?= 10.0.0.221 # ftp server ip (usually is switch's local IP)
 DEBUGLOG ?= 0 # defaults to disable debug logger 
 SERVERIP ?= 0.0.0.0 # put debug logger server IP here
