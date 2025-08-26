@@ -1,41 +1,67 @@
+/**
+ * @file main.cpp
+ * @brief Core game hooks and main functionality for the multiplayer client
+ */
+
 #include "main.hpp"
+
+// ===== SYSTEM INCLUDES =====
 #include <cmath>
 #include <math.h>
+
+// ===== AL/GAME ENGINE INCLUDES =====
 #include "al/execute/ExecuteOrder.h"
 #include "al/execute/ExecuteTable.h"
 #include "al/execute/ExecuteTableHolderDraw.h"
-#include "al/util/GraphicsUtil.h"
-#include "container/seadSafeArray.h"
-#include "game/GameData/GameDataHolderAccessor.h"
-#include "game/Player/PlayerActorBase.h"
-#include "game/Player/PlayerActorHakoniwa.h"
-#include "game/Player/PlayerHackKeeper.h"
-#include "heap/seadHeap.h"
-#include "math/seadVector.h"
-#include "server/Client.hpp"
-#include "puppets/PuppetInfo.h"
-#include "actors/PuppetActor.h"
 #include "al/LiveActor/LiveActor.h"
 #include "al/util.hpp"
 #include "al/util/AudioUtil.h"
 #include "al/util/CameraUtil.h"
 #include "al/util/ControllerUtil.h"
+#include "al/util/GraphicsUtil.h"
 #include "al/util/LiveActorUtil.h"
 #include "al/util/NerveUtil.h"
-#include "debugMenu.hpp"
+
+// ===== GAME INCLUDES =====
 #include "game/GameData/GameDataFunction.h"
+#include "game/GameData/GameDataHolderAccessor.h"
 #include "game/HakoniwaSequence/HakoniwaSequence.h"
+#include "game/Player/PlayerActorBase.h"
+#include "game/Player/PlayerActorHakoniwa.h"
 #include "game/Player/PlayerFunction.h"
+#include "game/Player/PlayerHackKeeper.h"
 #include "game/StageScene/StageScene.h"
+
+// ===== SEAD INCLUDES =====
+#include "container/seadSafeArray.h"
+#include "heap/seadHeap.h"
+#include "math/seadVector.h"
+
+// ===== PROJECT INCLUDES =====
+#include "actors/PuppetActor.h"
+#include "debugMenu.hpp"
 #include "helpers.hpp"
+#include "layouts/ManHuntIcon.h"
 #include "logger.hpp"
+#include "puppets/PuppetInfo.h"
 #include "rs/util.hpp"
+#include "server/Client.hpp"
 #include "server/gamemode/GameModeBase.hpp"
 #include "server/gamemode/GameModeManager.hpp"
-#include "speedboot/SpeedbootLoad.hpp"
+#include "server/gamemode/GameModeFactory.hpp"
+#include "server/manhunt/ManHuntMode.hpp"
 
+// ===== GLOBAL VARIABLES =====
 static int pInfSendTimer = 0;
 static int gameInfSendTimer = 0;
+static int debugPuppetIndex = 0;
+static int debugCaptureIndex = 0;
+static int pageIndex = 0;
+static const int maxPages = 3;
+
+al::SequenceInitInfo* initInfo;
+
+// ===== PLAYER INFO UPDATE FUNCTION =====
 
 void updatePlayerInfo(GameDataHolderAccessor holder, PlayerActorBase* playerBase, bool isYukimaru) {
     
@@ -67,25 +93,15 @@ void updatePlayerInfo(GameDataHolderAccessor holder, PlayerActorBase* playerBase
     gameInfSendTimer++;
 }
 
-// ------------- Hooks -------------
-
-int debugPuppetIndex = 0;
-int debugCaptureIndex = 0;
-static int pageIndex = 0;
-
-static const int maxPages = 3;
+// ===== MAIN DRAW HOOK =====
 
 void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead::DrawContext* drawContext) {
     GameModeManager* gmm  = GameModeManager::instance();
     GameModeBase*    mode = gmm->getMode<GameModeBase>();
 
-
-    if(GameModeManager::instance()->isMode(GameMode::MANHUNT)) {
-        if(!GameModeManager::instance()->isPaused())
             Time::calcTime();
-    } else {
-        Time::calcTime();  // this needs to be ran every frame, so running it here works
-    }
+
+
 
     if (!debugMode) {
         al::executeDraw(curSequence->mLytKit, "２Ｄバック（メイン画面）");
@@ -134,16 +150,32 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
     gTextWriter->printf("Your TCP status: %s\n", socket->getStateChar());
 
     sead::Heap* clientHeap = Client::getClientHeap();
-    if (clientHeap) {
-        sead::Heap* gmHeap = GameModeManager::instance()->getHeap();
-        gTextWriter->printf(
-            "Heap Use: %.1f/%.0f (Client) %.1f/%.0f (Gmode)\n",
-            0.0009765625 * (clientHeap->getSize() - clientHeap->getFreeSize()),
-            0.0009765625 * clientHeap->getSize(),
-            0.0009765625 * (gmHeap->getSize() - gmHeap->getFreeSize()),
-            0.0009765625 * gmHeap->getSize()
-        );
+if (clientHeap) {
+    sead::Heap* gmHeap = GameModeManager::instance()->getHeap();
+    if (gmHeap) {
+        // Validate heaps before using them
+        if (clientHeap->getSize() > 0 && gmHeap->getSize() > 0) {
+            size_t clientUsed = clientHeap->getSize() - clientHeap->getFreeSize();
+            size_t clientTotal = clientHeap->getSize();
+            size_t gmUsed = gmHeap->getSize() - gmHeap->getFreeSize();
+            size_t gmTotal = gmHeap->getSize();
+            
+            gTextWriter->printf(
+                "Heap Use: %.1f/%.0f (Client) %.1f/%.0f (Gmode)\n",
+                0.0009765625 * clientUsed,
+                0.0009765625 * clientTotal,
+                0.0009765625 * gmUsed,
+                0.0009765625 * gmTotal
+            );
+        } else {
+            gTextWriter->printf("Heap Use: Invalid heap sizes\n");
+        }
+    } else {
+        gTextWriter->printf("Heap Use: GameMode heap unavailable\n");
     }
+} else {
+    gTextWriter->printf("Heap Use: Client heap unavailable\n");
+}
 
     gTextWriter->printf(
         "Queue Count: %d/%d (Send) %d/%d (Receive)\n",
@@ -205,7 +237,7 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                 if (debugPuppetIndex == 0) {
                     gTextWriter->printf("Player Name: %s\n",       Client::getClientName());
                     gTextWriter->printf("Connection Status: %s\n", isConnected ? "Online" : "Offline");
-                    // gTextWriter->printf("Game mode: %i | %s\n",    gameMode, GameModeFactory::getModeName(gameMode));
+                    gTextWriter->printf("Game mode: %i | %s\n",    gameMode, GameModeFactory::getModeName(gameMode));
                     gTextWriter->printf("Is in same Stage: Yes\n");
                     gTextWriter->printf("Stage: %s\n",            client->getLastGameInfPacket()->stageName);
                     gTextWriter->printf("Scenario: %u\n",         client->getLastGameInfPacket()->scenarioNo);
@@ -230,7 +262,7 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                     if (curModel && curPupInfo) {
                         gTextWriter->printf("Player Name: %s\n",       curPupInfo->puppetName);
                         gTextWriter->printf("Connection Status: %s\n", curPupInfo->isConnected ? "Online" : "Offline");
-                        // gTextWriter->printf("Game mode: %i | %s\n",    curPupInfo->gameMode, GameModeFactory::getModeName(curPupInfo->gameMode));
+                        //gTextWriter->printf("Game mode: %i | %s\n",    curPupInfo->gameMode, GameModeFactory::getModeName(curPupInfo->gameMode));
                         gTextWriter->printf("Is in same Stage: %s\n",  curPupInfo->isInSameStage ? "Yes" : "No");
                         gTextWriter->printf("Stage: %s\n",             curPupInfo->stageName);
                         gTextWriter->printf("Scenario: %u\n",          curPupInfo->scenarioNo);
@@ -316,6 +348,8 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
     al::executeDraw(curSequence->mLytKit, "２Ｄバック（メイン画面）");
 }
 
+// ===== SHINE PACKET FUNCTION =====
+
 void sendShinePacket(GameDataHolderAccessor thisPtr, Shine* curShine) {
 
     if (!curShine->isGot()) {
@@ -328,6 +362,8 @@ void sendShinePacket(GameDataHolderAccessor thisPtr, Shine* curShine) {
 
     GameDataFunction::setGotShine(thisPtr, curShine->curShineInfo);
 }
+
+// ===== STAGE INITIALIZATION HOOK =====
 
 void stageInitHook(al::ActorInitInfo *info, StageScene *curScene, al::PlacementInfo const *placement, al::LayoutInitInfo const *lytInfo, al::ActorFactory const *factory, al::SceneMsgCtrl *sceneMsgCtrl, al::GameDataHolderBase *dataHolder) {
 
@@ -349,12 +385,14 @@ void stageInitHook(al::ActorInitInfo *info, StageScene *curScene, al::PlacementI
 
 }
 
+// ===== PLAYER MODEL SETUP =====
+
 PlayerCostumeInfo *setPlayerModel(al::LiveActor *player, const al::ActorInitInfo &initInfo, const char *bodyModel, const char *capModel, al::AudioKeeper *keeper, bool isCloset) {
     Client::sendCostumeInfPacket(bodyModel, capModel);
     return PlayerFunction::initMarioModelActor(player, initInfo, bodyModel, capModel, keeper, isCloset);
 }
 
-al::SequenceInitInfo* initInfo;
+// ===== CONSTRUCTION HOOK =====
 
 ulong constructHook() {  // hook for constructing anything we need to globally be accesible
 
@@ -370,6 +408,8 @@ ulong constructHook() {  // hook for constructing anything we need to globally b
     return 0x20;
 }
 
+// ===== THREAD INITIALIZATION =====
+
 bool threadInit(HakoniwaSequence *mainSeq) {  // hook for initializing client class
 
     al::LayoutInitInfo lytInfo = al::LayoutInitInfo();
@@ -381,6 +421,8 @@ bool threadInit(HakoniwaSequence *mainSeq) {  // hook for initializing client cl
     return GameDataFunction::isPlayDemoOpening(mainSeq->mGameDataHolder);
 }
 
+// ===== MAIN SEQUENCE HOOK =====
+
 bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
     StageScene* stageScene = (StageScene*)sequence->curScene;
 
@@ -390,6 +432,7 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
 
     al::PlayerHolder *pHolder = al::getScenePlayerHolder(stageScene);
     PlayerActorBase* playerBase = al::tryGetPlayerActor(pHolder, 0);
+    auto *player = (PlayerActorHakoniwa*)al::tryGetPlayerActor(pHolder, 0);
     
     bool isYukimaru = !playerBase->getPlayerInfo();
 
@@ -440,7 +483,6 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
             GameModeManager::instance()->toggleActive();
         }
     }
-
     if (Client::isMusicDisabled()) {
         if (al::isPlayingBgm(stageScene)) {
             al::stopAllBgm(stageScene, 0);
@@ -450,6 +492,8 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
     return isFirstStep;
 
 }
+
+// ===== LOGGING HOOK =====
 
 void seadPrintHook(const char *fmt, ...)
 {

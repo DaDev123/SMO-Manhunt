@@ -127,130 +127,123 @@ B59E28 B seadPrintHook // sead::system::print
 // 891394 BL drawInitHook
 // 91328 BL updateInitHook
 
-//Unlocks costume doors
-262850 MOV W0, #0
-2609b4 MOV W0, #0
-25ff74 MOV X0, #1
-25ffac MOV X0, #0
 
-// speedbooter hooks
+// Temporary speedbooter hooks (take out after first stream!)
 50ef28 BL speedboot::hakoniwaSetNerveSetup
 50eb88 ORR w2, wzr, #0x1f // nerve state count
 50eb64 BL speedboot::prepareLayoutInitInfo
 
-// MannHunt Patches + Demo Skip Patches
+262850 MOV W0, #0 // Unlocks costume doors
+2609b4 MOV W0, #0 // Unlocks costume doors
+25ff74 MOV X0, #1 // Unlocks costume doors
+25ffac MOV X0, #0 // Unlocks costume doors
 
-43f83c NOP
 
-//Compass
+// ---------------------------------- ManHunt Custom Patches ----------------------------------
+
+
+// Custom Compass Player Tracker
 1F756C BL overwriteCompassNorthDir
 1F7594 BL compassPlayerDirHook
 1F72B4 MOV W0, #1
 
 
-//Unlocks costume doors
-262850 MOV W0, #0
-2609b4 MOV W0, #0
-25ff74 MOV X0, #1
-25ffac MOV X0, #0
 
-// shine demo
-1D18F0 NOP
-1D1934 NOP
-4DBC20 NOP
-4DBF08 NOP
-4DBF14 NOP
-4DBF54 MOV W0, #1
-4DBF60 MOV W0, #1
-4DC1D4 NOP
-4DC578 MOV W0, #1
-4DC584 MOV W0, #1
-4DC66C MOV W0, #1
-4DC8B0 MOV W0, #1
-4DCA64 MOV W0, #1
-4DCA9C MOV W0, #1
+// Shines (Moons / Multi Moons / Story Moons) Demo Skip
+1D18F0 NOP          // Shine (Moons) Demo Skip
+1D1934 NOP          // Shine (Moons) Demo Skip
+4DBC20 NOP          // Shine (Moons) Demo Skip
+4DBF08 NOP          // Shine (Moons) Demo Skip
+4DBF14 NOP          // Shine (Moons) Demo Skip
+4DBF54 MOV W0, #1   // Shine (Moons) Demo Skip
+4DBF60 MOV W0, #1   // Shine (Moons) Demo Skip
+4DC1D4 NOP          // Shine (Moons) Demo Skip
+4DC578 MOV W0, #1   // Shine (Moons) Demo Skip
+4DC584 MOV W0, #1   // Shine (Moons) Demo Skip
+4DC66C MOV W0, #1   // Shine (Moons) Demo Skip
+4DC8B0 MOV W0, #1   // Shine (Moons) Demo Skip
+4DCA64 MOV W0, #1   // Shine (Moons) Demo Skip
+4DCA9C MOV W0, #1   // Shine (Moons) Demo Skip
+4DE2F8 MOV W0, #1   // Shine (Moons) Demo Skip
+4DE6AC MOV W0, #1   // Shine (Moons) Demo Skip
+4DE710 MOV W0, #1   // Shine (Moons) Demo Skip
+4DE974 MOV W0, #1   // Shine (Moons) Demo Skip
+4DE984 MOV W0, #1   // Shine (Moons) Demo Skip
+4DE9F8 MOV W0, #1   // Shine (Moons) Demo Skip
+4DEA48 NOP          // Shine (Moons) Demo Skip
+4DEA70 MOV W0, #1   // Shine (Moons) Demo Skip
+4DEB30 MOV W0, #1   // Shine (Moons) Demo Skip
+4DED44 MOV W0, #1   // Shine (Moons) Demo Skip
+4DED80 MOV W0, #1   // Shine (Moons) Demo Skip
+4DED90 MOV W0, #1   // Shine (Moons) Demo Skip
 
-4DE2F8 MOV W0, #1
-4DE6AC MOV W0, #1
-4DE710 MOV W0, #1
-4DE974 MOV W0, #1
-4DE984 MOV W0, #1
-4DE9F8 MOV W0, #1
-4DEA48 NOP
-4DEA70 MOV W0, #1
-4DEB30 MOV W0, #1
-4DED44 MOV W0, #1
-4DED80 MOV W0, #1
-4DED90 MOV W0, #1
-
-//Else
-
-4dee70 MOV W0, #1
-4dee58 MOV W0, #1
-
-4eef14 MOV W0, #1
-4eef48 MOV W0, #1
-4eef08 MOV W0, #1
+550168:             // ShineGrand (Multi Moon) Demo Skip
+    mov w0, #1      // ShineGrand (Multi Moon) Demo Skip
+    ret             // ShineGrand (Multi Moon) Demo Skip
 
 
-//Multi moons
-550168:
-    mov w0, #1
-    ret
+4df0ac MOV W0, #1   // Shine (Moons) Healing Demo Skip
+4df16c MOV W0, #1   // Shine (Moons) Healing Demo Skip
+4eecb0 MOV W0, #1   // Shine (Moons) Healing Demo Skip
+4eed90 MOV W0, #1   // Shine (Moons) Healing Demo Skip
+4eed9c MOV W0, #1   // Shine (Moons) Healing Demo Skip
+4df180 MOV W0, #1   // Shine (Moons) Healing Demo Skip
+4dc740 MOV W0, #1   // Shine (Moons) Healing Demo Skip
 
-//LifeUpMaxItem
-4DB934 NOP
 
-// Notes
-2D250C NOP
 
-// Hearts healing Twice
-1c9f64 BL healTwice
-1d03d4 BL 0x00000071005286f0
-1cf108 BL 0x00000071005286f0
-1d2ddc BL 0x00000071005286f0
-1d1360 BL 0x00000071005286f0
-1D14B0 BL 0x00000071005286f0
-4DF160 BL 0x00000071005287C8
-4DC6B0 BL 0x00000071005287C8
-//Checkpoint Healing 3
-249c70 BL healThreeTimes
+// Custom Heal System Patches
+1c9f64 BL healTwice             // Hearts Healing 2
+1d03d4 BL 0x00000071005286f0    // Moons Healing 1
+1cf108 BL 0x00000071005286f0    // Moons Healing 1
+1d2ddc BL 0x00000071005286f0    // Moons Healing 1
+1d1360 BL 0x00000071005286f0    // Moons Healing 1
+1D14B0 BL 0x00000071005286f0    // Moons Healing 1
+4DF160 BL 0x00000071005287C8    // Moons Healing 1
+4DC6B0 BL 0x00000071005287C8    // Moons Healing 1
+249c70 BL healThreeTimes        // Checkpoint Healing 3
 
-//Cutscene auto skip
+
+
+// Cutscenes auto skip
 4EFAE8 mov w0, #1
 5516A8:
     mov w0, #0
     ret
 
 
-// Odyssey Patches
-311b00 NOP
-311b10 NOP
-
-//Always able to skip odyssey traveling cutscene
-50FF48 NOP
-
 
 // Wipe Removal
 99e178 NOP
 
 
-// moon healing
-4df0ac MOV W0, #1
-4df16c MOV W0, #1
-4eecb0 MOV W0, #1
-4eed90 MOV W0, #1
-4eed9c MOV W0, #1
-4df180 MOV W0, #1
-4dc740 MOV W0, #1
 
 // Cappy Dialog Removal
 0d12f0 NOP
 0d1350 NOP
 54bf1c NOP
 
-//Remove boss barriers from bowser's
+
+
+//Remove Boss Barrier from Bowser's Hariet Fight
 009F7C BL barrierAppearHook
 
-// Remove Assist Mode Ledge Grabs
-45c69c NOP
+
+
+// QOL Patches
+45c69c NOP // Assist Mode Ledge Grabs Removal
+50FF48 NOP // Skip Travelling in the Odyssey Cutscenes
+311b00 NOP // Skip Travelling in the Odyssey Cutscenes
+311b10 NOP // Skip Travelling in the Odyssey Cutscenes
+4DB934 NOP // LifeMaxUpItem (Life Up Heart) Demo Skip
+2D250C NOP // Notes Demo Skip
+
+
+
+// Else / Random Patches
+4dee70 MOV W0, #1
+4dee58 MOV W0, #1
+4eef14 MOV W0, #1
+4eef48 MOV W0, #1
+4eef08 MOV W0, #1
+43f83c NOP

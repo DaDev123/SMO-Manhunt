@@ -96,18 +96,31 @@ namespace al
     bool clearSklAnimInterpole(al::LiveActor *);
 
     // setters
-    void setTransY(al::LiveActor*, float);
-    void setTrans(al::LiveActor*, sead::Vector3f const&);
-    void setScale(al::LiveActor*, sead::Vector3f const&);
-    void setScale(al::LiveActor*, float, float, float);
-    void setScaleAll(al::LiveActor*, float);
-    void setScaleX(al::LiveActor*, float);
-    void setScaleY(al::LiveActor*, float);
-    void setScaleZ(al::LiveActor*, float);
-    void setGravity(al::LiveActor const*, sead::Vector3f const&);
-    void setFront(al::LiveActor*, sead::Vector3f const&);
-    void setQuat(al::LiveActor*, const sead::Quatf&);
-    void setVelocityZero(al::LiveActor*);
+
+    void setTransY(al::LiveActor *, float);
+
+    void setTrans(al::LiveActor *, sead::Vector3f const &);
+
+    void setScale(al::LiveActor *, sead::Vector3f const &);
+
+    void setScale(al::LiveActor *, float, float, float);
+
+    void setScaleAll(al::LiveActor *, float);
+
+    void setScaleX(al::LiveActor *, float);
+
+    void setScaleY(al::LiveActor *, float);
+
+    void setScaleZ(al::LiveActor *, float);
+
+    void setGravity(al::LiveActor const *, sead::Vector3f const &);
+
+    void setFront(al::LiveActor *, sead::Vector3f const &);
+
+    void setQuat(al::LiveActor *, const sead::Quatf &);
+
+    void setVelocityZero(al::LiveActor *);
+
     void setEffectParticleScale(al::IUseEffectKeeper* actor, char const* effectName, float scale);
     void setEffectParticleColor(IUseEffectKeeper*, const char*, const sead::Color4f&);
 
@@ -129,7 +142,7 @@ namespace al
 
     void setPaneStringFormat(al::IUseLayout *layout, char const *paneName, char const *format,...);
 
-        void setPaneLocalTrans(al::IUseLayout *layout, const char *paneName, sead::Vector3f const &);
+    void setPaneLocalTrans(al::IUseLayout *layout, const char *paneName, sead::Vector3f const &);
     void setPaneLocalTrans(al::IUseLayout *layout, const char *paneName, sead::Vector2f const &);
     void setPaneLocalSize(al::IUseLayout *layout, const char *paneName, sead::Vector2f const &);
     void setPaneLocalScale(al::IUseLayout *layout, const char *paneName, sead::Vector2f const &);
@@ -148,7 +161,8 @@ namespace al
 
     void setCameraTarget(al::IUseCamera *, al::CameraTargetBase *);
 
-        // calc functions
+    // calc functions
+
     f32 calcDistance(al::LiveActor const*, al::LiveActor const*);  // calculates distance between two actors
     f32 calcDistance(al::LiveActor const*, sead::Vector3f const&); // calculates distance between an actor and a position in the world
     f32 calcDistanceH(al::LiveActor const *, al::LiveActor const*); 

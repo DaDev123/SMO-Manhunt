@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string_view>
-#include <array>
+#include <string>
+#include <cstring>
 #include "types.h"
 
 #include "sead/math/seadVector.h"
@@ -24,7 +24,7 @@ void logQuat(const char *quatName, sead::Quatf quat);
 
 sead::Vector3f QuatToEuler(sead::Quatf *quat);
 
-float vecMagnitude(sead::Vector3f const& input);
+float vecMagnitude(sead::Vector3f const &input);
 float vecDistance(sead::Vector3f const& a, sead::Vector3f const& b);
 float vecDistanceSq(sead::Vector3f const& a, sead::Vector3f const& b);
 
@@ -35,11 +35,10 @@ bool isInCostumeList(const char *costumeName);
 const char *tryGetPuppetCapName(PuppetInfo *info);
 const char* tryGetPuppetBodyName(PuppetInfo* info);
 
+const char* tryConvertName(const char* className);
+
 void killMainPlayer(al::LiveActor* actor);
 void killMainPlayer(PlayerActorHakoniwa* mainPlayer);
-
-const char* tryConvertName(const char* className);
-const char* convertCaptureHackName(const char* hackName);
 
 __attribute__((used)) static const char* costumeNames[] = {
     "Mario",

@@ -53,7 +53,7 @@ void ManHuntIcon::exeWait() {
     }
 
     // Show current compass target
-    if (mInfo->mIsPlayerIt) { // Only show for seekers
+    if (mInfo->mIsPlayerHunting) { // Only show for seekers
         const char* targetName = getCurrentCompassTarget();
         if (targetName) {
             al::setPaneStringFormat(this, "TxtTarget", targetName);

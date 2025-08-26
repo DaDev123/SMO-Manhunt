@@ -77,11 +77,8 @@ void PuppetActor::init(al::ActorInitInfo const &initInfo) {
 
     mModelHolder->registerModel(normal2DModel, "Normal2D");
 
-    al::setClippingInfo(normalModel, 5000000000000.0f, 0);
-    al::setClippingNearDistance(normalModel, 5000000000000.0f);
-
-    al::setClippingInfo(normal2DModel, 5000000000000.0f, 0);
-    al::setClippingNearDistance(normal2DModel, 5000000000000.0f);
+    al::setClippingInfo(normalModel, 50000.0f, 0);
+    al::setClippingNearDistance(normalModel, 50000.0f);
 
     al::hideSilhouetteModelIfShow(normalModel);
 
@@ -98,180 +95,9 @@ void PuppetActor::init(al::ActorInitInfo const &initInfo) {
 
     startAction("Wait");
 
-    al::invalidateClipping(normalModel);
-    al::invalidateClipping(normal2DModel);
-}
+    al::validateClipping(normalModel);
+    al::validateClipping(normal2DModel);
 
-void PuppetActor::initAfterPlacement() { al::LiveActor::initAfterPlacement(); }
-
-void PuppetActor::initOnline(PuppetInfo *pupInfo) {
-
-    mInfo = pupInfo;
-
-    mPuppetCap->initOnline(pupInfo);
-}
-
-void PuppetActor::movement() {
-    al::LiveActor::movement();
-}
-
-void PuppetActor::calcAnim() {
-    al::LiveActor::calcAnim();
-}
-
-void PuppetActor::control() { 
-    if(mInfo) {
-
-        al::LiveActor* curModel = getCurrentModel();
-
-        // Animation Updating
-
-        if(!al::isActionPlaying(curModel, mInfo->curSubAnimStr)) {
-            startAction(mInfo->curAnimStr);
-        }else if(al::isActionEnd(curModel)) {
-            startAction(mInfo->curAnimStr);
-        }
-
-        if(isNeedBlending()) {
-            for (size_t i = 0; i < 6; i++)
-            {
-                setBlendWeight(i, mInfo->blendWeights[i]);
-            }
-        }
-
-        // Position & Rotation Handling
-
-        sead::Vector3f* pPos = al::getTransPtr(this);
-
-        sead::Quatf *pQuat = al::getQuatPtr(this);
-
-        if (!mIs2DModel) {
-            mClosingSpeed = VisualUtils::SmoothMove({pPos, pQuat}, {&mInfo->playerPos, &mInfo->playerRot}, Time::deltaTime, mClosingSpeed, 1440.0f);
-        } else {
-
-            // do not linearly interpolate rotation if model is 2D, and use basic lerp instead of visual util's smooth move
-
-            if(*pPos != mInfo->playerPos) 
-            {
-                al::lerpVec(pPos, *pPos, mInfo->playerPos, 0.25);
-            }
-
-            al::setQuat(this, mInfo->playerRot);
-        }
-
-        // Model Updating
-
-        if (!mIs2DModel && mInfo->is2D) {
-            changeModel("Normal2D");
-            mIs2DModel = true;
-
-        } else if (mIs2DModel && !mInfo->is2D) {
-            changeModel("Normal");
-            mIs2DModel = false;
-        }
-
-        // Capture Updating
-
-        if (mInfo->isCaptured && !mIsCaptureModel) {
-
-            getCurrentModel()->makeActorDead();  // sets previous model to dead so we can try to
-                                                 // switch to capture model
-            setCapture(mInfo->curHack);
-            mIsCaptureModel =  true;
-            getCurrentModel()->makeActorAlive(); // make new model alive
-
-        } else if (!mInfo->isCaptured && mIsCaptureModel) {
-
-            getCurrentModel()->makeActorDead(); // make capture model dead
-            mModelHolder->changeModel("Normal"); // set player model to normal
-            mIsCaptureModel = false;
-            getCurrentModel()->makeActorAlive(); // make player model alive
-
-        }
-
-        // Visibility Updating
-
-        if(mInfo->isCapThrow) {
-            if(al::isDead(mPuppetCap)) {                
-                mPuppetCap->makeActorAlive();
-                al::setTrans(mPuppetCap, mInfo->capPos);
-            }
-        }else {
-            if(al::isAlive(mPuppetCap)) {
-
-                mPuppetCap->makeActorDead();
-
-                startAction(mInfo->curSubAnimStr);
-
-                al::LiveActor* headModel = al::getSubActor(curModel, "頭");
-                if (headModel) { al::startVisAnimForAction(headModel, "CapOn"); }
-            }
-        }
-
-        if(mNameTag && !GameModeManager::instance()->isActive())
-            if(!mNameTag->mIsAlive)
-                mNameTag->appear();
-
-        if (mNameTag && GameModeManager::instance()->isActive()) {
-    GameMode curMode = GameModeManager::instance()->getGameMode();
-    switch(curMode) {
-        case GameMode::MANHUNT: {
-            ManHuntMode* manhuntMode = GameModeManager::instance()->getMode<ManHuntMode>();
-            bool isLocalPlayerIt = manhuntMode->isPlayerHunting();
-            bool isTargetPlayerIt = mInfo->isIt;
-            
-            // Show nametag if both players have the same "it" status
-            mNameTag->mIsAlive = (isLocalPlayerIt && isTargetPlayerIt) || 
-                               (!isLocalPlayerIt && !isTargetPlayerIt);
-            break;
-        }
-        default:
-            Logger::log("Name tag display failed due to unknown active game mode!\n");
-            break;
-    };
-}
-
-        // Sub-Actor Updating
-
-        mPuppetCap->update();
-
-        // Syncing
-
-        syncPose();
-
-    }
-}
-
-void PuppetActor::makeActorAlive() {
-    
-    al::LiveActor *curModel = getCurrentModel();
-
-    if (al::isDead(curModel)) {
-        curModel->makeActorAlive();
-    }
-
-    // update name tag when puppet becomes active again
-    if (mInfo) {
-        if (mNameTag) {
-            mNameTag->setText(mInfo->puppetName);
-        }
-    }
-
-    al::LiveActor::makeActorAlive();
-
-}
-
-void PuppetActor::makeActorDead() {
-
-    al::LiveActor *curModel = getCurrentModel();
-    
-    if (!al::isDead(curModel)) {
-        curModel->makeActorDead();
-    }
-
-    mPuppetCap->makeActorDead();
-    
-    al::LiveActor::makeActorDead();
 }
 
 bool overwriteCompassNorthDir(sead::Vector3f* out, const al::IUseSceneObjHolder*){
@@ -395,15 +221,170 @@ void compassPlayerDirHook(sead::Vector3f* out){
     }
 }
 
-void PuppetActor::attackSensor(al::HitSensor* source, al::HitSensor* target) {
+void PuppetActor::initAfterPlacement() { al::LiveActor::initAfterPlacement(); }
 
-    // prevent normal attack behavior if gamemode requires custom behavior
-    if (GameModeManager::tryAttackPuppetSensor(source, target))
-        return;
+void PuppetActor::initOnline(PuppetInfo *pupInfo) {
+
+    mInfo = pupInfo;
+
+    mPuppetCap->initOnline(pupInfo);
+}
+
+void PuppetActor::movement() {
+    al::LiveActor::movement();
+}
+
+void PuppetActor::calcAnim() {
+    al::LiveActor::calcAnim();
+}
+
+void PuppetActor::control() { 
+    if(mInfo) {
+
+        al::LiveActor* curModel = getCurrentModel();
+
+        // Animation Updating
+
+        if(!al::isActionPlaying(curModel, mInfo->curSubAnimStr)) {
+            startAction(mInfo->curAnimStr);
+        }else if(al::isActionEnd(curModel)) {
+            startAction(mInfo->curAnimStr);
+        }
+
+        if(isNeedBlending()) {
+            for (size_t i = 0; i < 6; i++)
+            {
+                setBlendWeight(i, mInfo->blendWeights[i]);
+            }
+        }
+
+        // Position & Rotation Handling
+
+        sead::Vector3f* pPos = al::getTransPtr(this);
+
+        sead::Quatf *pQuat = al::getQuatPtr(this);
+
+        if (!mIs2DModel) {
+            mClosingSpeed = VisualUtils::SmoothMove({pPos, pQuat}, {&mInfo->playerPos, &mInfo->playerRot}, Time::deltaTime, mClosingSpeed, 1440.0f);
+        } else {
+
+            // do not linearly interpolate rotation if model is 2D, and use basic lerp instead of visual util's smooth move
+
+            if(*pPos != mInfo->playerPos) 
+            {
+                al::lerpVec(pPos, *pPos, mInfo->playerPos, 0.25);
+            }
+
+            al::setQuat(this, mInfo->playerRot);
+        }
+
+        // Model Updating
+
+        if (!mIs2DModel && mInfo->is2D) {
+            changeModel("Normal2D");
+            mIs2DModel = true;
+
+        } else if (mIs2DModel && !mInfo->is2D) {
+            changeModel("Normal");
+            mIs2DModel = false;
+        }
+
+        // Capture Updating
+
+        if (mInfo->isCaptured && !mIsCaptureModel) {
+
+            getCurrentModel()->makeActorDead();  // sets previous model to dead so we can try to
+                                                 // switch to capture model
+            setCapture(mInfo->curHack);
+            mIsCaptureModel =  true;
+            getCurrentModel()->makeActorAlive(); // make new model alive
+
+        } else if (!mInfo->isCaptured && mIsCaptureModel) {
+
+            getCurrentModel()->makeActorDead(); // make capture model dead
+            mModelHolder->changeModel("Normal"); // set player model to normal
+            mIsCaptureModel = false;
+            getCurrentModel()->makeActorAlive(); // make player model alive
+
+        }
+
+        // Visibility Updating
+
+        if(mInfo->isCapThrow) {
+            if(al::isDead(mPuppetCap)) {                
+                mPuppetCap->makeActorAlive();
+                al::setTrans(mPuppetCap, mInfo->capPos);
+            }
+        }else {
+            if(al::isAlive(mPuppetCap)) {
+
+                mPuppetCap->makeActorDead();
+
+                startAction(mInfo->curSubAnimStr);
+
+                al::LiveActor* headModel = al::getSubActor(curModel, "頭");
+                if (headModel) { al::startVisAnimForAction(headModel, "CapOn"); }
+            }
+        }
+
+        if (mNameTag) {
+    if (GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT)) {
+        mNameTag->mIsAlive =
+            (GameModeManager::instance()->getMode<ManHuntMode>()->isPlayerHunting() == mInfo->isIt);
+    } else {
+        if (!mNameTag->mIsAlive)
+            mNameTag->appear();
+    }
+}
+
+
+        // Sub-Actor Updating
+
+        mPuppetCap->update();
+
+        // Syncing
+
+        syncPose();
+
+    }
+}
+
+void PuppetActor::makeActorAlive() {
+    
+    al::LiveActor *curModel = getCurrentModel();
+
+    if (al::isDead(curModel)) {
+        curModel->makeActorAlive();
+    }
+
+    // update name tag when puppet becomes active again
+    if (mInfo) {
+        if (mNameTag) {
+            mNameTag->setText(mInfo->puppetName);
+        }
+    }
+
+    al::LiveActor::makeActorAlive();
+
+}
+
+void PuppetActor::makeActorDead() {
+
+    al::LiveActor *curModel = getCurrentModel();
+    
+    if (!al::isDead(curModel)) {
+        curModel->makeActorDead();
+    }
+
+    mPuppetCap->makeActorDead();
+    
+    al::LiveActor::makeActorDead();
+}
+
+void PuppetActor::attackSensor(al::HitSensor* source, al::HitSensor* target) {
     
     if (!al::sendMsgPush(target, source)) {
         rs::sendMsgPushToPlayer(target, source);
-        rs::sendMsgPlayerDisregardTargetMarker(target, source);
     }
 
 }
@@ -411,16 +392,10 @@ void PuppetActor::attackSensor(al::HitSensor* source, al::HitSensor* target) {
 bool PuppetActor::receiveMsg(const al::SensorMsg* msg, al::HitSensor* source,
                              al::HitSensor* target) {
 
-    // try to use gamemode recieve logic, otherwise fallback to default behavior
-    if (GameModeManager::tryReceivePuppetMsg(msg, source, target)) {
-        return true;
-    }
-
     if ((al::isMsgPlayerTrampleReflect(msg) || rs::isMsgPlayerAndCapObjHipDropReflectAll(msg)) && al::isSensorName(target, "Body"))
     {
-            rs::requestHitReactionToAttacker(msg, target, source);
-            return true;
-        
+        rs::requestHitReactionToAttacker(msg, target, source);
+        return true;
     }
 
     return false;
@@ -568,17 +543,6 @@ void PuppetActor::emitJoinEffect() {
     al::tryDeleteEffect(this, "Disappear"); // remove previous effect (if played previously)
 
     al::tryEmitEffect(this, "Disappear", nullptr);
-}
-
-void PuppetActor::debugThrowCap() {
-    mInfo->isCapThrow = !mInfo->isCapThrow;
-
-    if (mInfo->isCapThrow) {
-        sead::Vector3f &fowardDir = al::getFront(this);
-        sead::Vector3f &curPos = al::getTrans(this);
-
-        mInfo->capPos = sead::Vector3f(curPos.x - (fowardDir.x * 500.0f), curPos.y + 80.0f, curPos.z - (fowardDir.z * 500.0f));
-    }
 }
 
 const char *executorName = "ＮＰＣ";

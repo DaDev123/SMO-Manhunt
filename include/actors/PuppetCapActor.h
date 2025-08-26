@@ -34,5 +34,5 @@ class PuppetCapActor : public al::LiveActor {
         PuppetInfo* mInfo;
         nn::account::Uid mUserID;
         bool mIsInvincible = false;
-        float mInvincibleTimer = 0.0f;  // ← Add this line
+        float mInvincibleTimer = 0.0f;
 };

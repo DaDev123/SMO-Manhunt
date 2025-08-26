@@ -1,10 +1,9 @@
 #include "server/manhunt/ManHuntMode.hpp"
 #include <cmath>
+#include "main.hpp"
 #include "al/async/FunctorV0M.hpp"
 #include "al/util.hpp"
-#include "al/util/DemoUtil.h"
 #include "al/util/ControllerUtil.h"
-#include "al/util/LiveActorUtil.h"
 #include "game/GameData/GameDataHolderAccessor.h"
 #include "game/Layouts/CoinCounter.h"
 #include "game/Layouts/MapMini.h"
@@ -13,20 +12,24 @@
 #include "heap/seadHeapMgr.h"
 #include "layouts/ManHuntIcon.h"
 #include "logger.hpp"
-#include "math/seadVector.h"
-#include "packets/Packet.h"
 #include "rs/util.hpp"
-#include "rs/util/PlayerUtil.h"
 #include "server/gamemode/GameModeBase.hpp"
 #include "server/Client.hpp"
 #include "server/gamemode/GameModeTimer.hpp"
 #include <heap/seadHeap.h>
-#include <math.h>
 #include "server/gamemode/GameModeManager.hpp"
 #include "server/gamemode/GameModeFactory.hpp"
+#include "al/util/DemoUtil.h"
 
 #include "basis/seadNew.h"
 #include "server/manhunt/ManHuntConfigMenu.hpp"
+
+#include "al/sensor/HitSensor.h"
+#include "al/util/SensorUtil.h"
+#include "rs/util/SensorUtil.h"
+#include "game/Player/PlayerActorHakoniwa.h"
+#include "actors/PuppetActor.h"
+#include "server/Client.hpp"
 
 ManHuntMode::ManHuntMode(const char* name) : GameModeBase(name) {}
 
@@ -60,121 +63,85 @@ void ManHuntMode::init(const GameModeInitInfo& info) {
 
 }
 
-void ManHuntMode::processPacket(Packet *packet) {
-    ManHuntPacket* tagPacket = (ManHuntPacket*)packet;
-
-    // if the packet is for our player, edit info for our player
-    if (tagPacket->mUserID == Client::getClientId() && GameModeManager::instance()->isMode(GameMode::MANHUNT)) {
-
-        ManHuntMode* mode = GameModeManager::instance()->getMode<ManHuntMode>();
-        ManHuntInfo* curInfo = GameModeManager::instance()->getInfo<ManHuntInfo>();
-
-        if (tagPacket->updateType & TagUpdateType::STATE) {
-            mode->setPlayerTagState(tagPacket->isIt);
-        }
-
-        if (tagPacket->updateType & TagUpdateType::TIME) {
-            curInfo->mHidingTime.mSeconds = tagPacket->seconds;
-            curInfo->mHidingTime.mMinutes = tagPacket->minutes;
-        }
-
-        return;
-
-    }
-
-    PuppetInfo* curInfo = Client::findPuppetInfo(tagPacket->mUserID, false);
-
-    if (!curInfo) {
-        return;
-    }
-
-    curInfo->isIt = tagPacket->isIt;
-    curInfo->seconds = tagPacket->seconds;
-    curInfo->minutes = tagPacket->minutes;
-}
-
-Packet *ManHuntMode::createPacket() {
-
-    ManHuntPacket *packet = new ManHuntPacket();
-
-    packet->mUserID = Client::getClientId();
-
-    packet->isIt = isPlayerHunting();
-
-    packet->minutes = mInfo->mHidingTime.mMinutes;
-    packet->seconds = mInfo->mHidingTime.mSeconds;
-    packet->updateType = static_cast<TagUpdateType>(TagUpdateType::STATE | TagUpdateType::TIME);
-
-    return packet;
-}
-
 void ManHuntMode::begin() {
-    unpause();
+    mModeLayout->appear();
 
     mIsFirstFrame = true;
-    mInvulnTime   = 0.0f;
 
-    // Set initial Kids Mode state based on player role
     GameDataHolderAccessor accessor(this);
-    if (accessor.mData && accessor.mData->mGameDataFile) {
-        // If player starts as seeker, disable Kids Mode; if hider, enable it
-        bool initialKidsMode = !mInfo->mIsPlayerIt; // true for hiders, false for seekers
-        accessor.mData->mGameDataFile->setKidsMode(initialKidsMode);
-    }
 
-    GameModeBase::begin();
-}
-
-
-
-void ManHuntMode::end() {
-
-    pause();
-
-    GameModeBase::end();
-}
-
-void ManHuntMode::pause() {
-    GameModeBase::pause();
-
-    mModeLayout->tryEnd();
-    mModeTimer->disableTimer();
-}
-
-void ManHuntMode::unpause() {
-    GameModeBase::unpause();
-
-    mModeLayout->appear();
-    
-    if (!mInfo->mIsPlayerIt) {
+    if (!mInfo->mIsPlayerHunting) {
         mModeTimer->enableTimer();
         mModeLayout->showHiding();
+
+        if (accessor.mData && accessor.mData->mGameDataFile) {
+            accessor.mData->mGameDataFile->setKidsMode(true);
+        }
+
     } else {
         mModeTimer->disableTimer();
         mModeLayout->showSeeking();
     }
+
+
+    GameModeBase::begin();
+}
+
+void ManHuntMode::end() {
+
+    mModeLayout->tryEnd();
+
+    mModeTimer->disableTimer();
+
+    mInvulnTime = 0.0f;
+
+    GameModeBase::end();
 }
 
 void ManHuntMode::update() {
+
     PlayerActorBase* playerBase = rs::getPlayerActor(mCurScene);
-    bool isYukimaru = !playerBase->getPlayerInfo();
+
+    bool isYukimaru = !playerBase->getPlayerInfo(); // if PlayerInfo is a nullptr, that means we're dealing with the bound bowl racer
 
     if (mIsFirstFrame) {
+
         if (mInfo->mIsUseGravityCam && mTicket) {
             al::startCamera(mCurScene, mTicket, -1);
         }
+
         mIsFirstFrame = false;
     }
 
-    if (rs::isActiveDemoPlayerPuppetable(playerBase)) {
-        mInvulnTime = 0.0f;
+    // Inside ManHuntMode::update()
+PlayerActorHakoniwa* player = dynamic_cast<PlayerActorHakoniwa*>(rs::getPlayerActor(mCurScene));
+if (player && player->mPlayerAnimator) {
+    if (player->mPlayerAnimator->isAnim("CatchKoopaCap")) {
+        // Grant invincibility while catching cap
+        mIsCapInvincible = true;
+        mCapInvulnTimer = 0.0f; // reset timer
     }
+    else if (player->mPlayerAnimator->isAnim("KoopaCapPunchFinishL") ||
+             player->mPlayerAnimator->isAnim("KoopaCapPunchFinishR")) {
+        // If not already counting down, start 5s grace
+        if (mCapInvulnTimer <= 0.0f) {
+            mCapInvulnTimer = 2.0f;
+        }
+    }
+}
 
-    bool isSpectatorCameraActive = mTicket && mTicket->mIsActive;
+// Tick down invincibility timer
+if (mCapInvulnTimer > 0.0f) {
+    mCapInvulnTimer -= Time::deltaTime; // use your custom delta time
+    if (mCapInvulnTimer <= 0.0f) {
+        mIsCapInvincible = false; // remove invincibility after 5s
+    }
+}
+
 
     ShineTowerRocket* odyssey = rs::tryGetShineTowerRocketFromDemoDirector((al::LiveActor*)playerBase);
     if (odyssey) {
-        if (GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT) && !isYukimaru) {
+        if (GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT)) {
             al::tryEmitEffect((al::LiveActor*)odyssey, "Special1WorldHomeGKBarrier", al::getTransPtr((al::LiveActor*)odyssey));
             al::setEffectParticleScale((al::LiveActor*)odyssey, "Special1WorldHomeGKBarrier", 1.3f);
 
@@ -215,20 +182,6 @@ void ManHuntMode::update() {
         }
     }
 
-    if (isPlayerHunting()) {
-        if (!isSpectatorCameraActive) {
-            mModeTimer->timerControl();
-        }
-    } else {
-        if (mInvulnTime < 5) {
-            mInvulnTime += Time::deltaTime;
-        }
-
-        if (!isSpectatorCameraActive) {
-            mModeTimer->updateTimer();
-        }
-    }
-
     if (mInfo->mIsUseGravity && !isYukimaru) {
         sead::Vector3f gravity;
         if (rs::calcOnGroundNormalOrGravityDir(&gravity, playerBase, playerBase->getPlayerCollision())) {
@@ -237,7 +190,7 @@ void ManHuntMode::update() {
             al::setGravity(playerBase, gravity);
             al::setGravity(((PlayerActorHakoniwa*)playerBase)->mHackCap, gravity);
         }
-
+        
         if (al::isPadHoldL(-1)) {
             if (al::isPadTriggerRight(-1)) {
                 if (al::isActiveCamera(mTicket)) {
@@ -248,72 +201,292 @@ void ManHuntMode::update() {
                     mInfo->mIsUseGravityCam = true;
                 }
             }
-        } else if (al::isPadTriggerZL(-1) && al::isPadTriggerLeft(-1)) {
-            killMainPlayer(((PlayerActorHakoniwa*)playerBase));
+        } else if (al::isPadTriggerZL(-1)) {
+            if (al::isPadTriggerLeft(-1)) {
+                killMainPlayer(((PlayerActorHakoniwa*)playerBase));
+            }
         }
+    }
+
+    if (al::isPadTriggerUp(-1) && !al::isPadHoldZL(-1))
+    {
+        GameDataHolderAccessor accessor(this);
+        mInfo->mIsPlayerHunting = !mInfo->mIsPlayerHunting;
+
+        mModeTimer->toggleTimer();
+
+        if(!mInfo->mIsPlayerHunting) {
+            mInvulnTime = 0;
+            mModeLayout->showHiding();
+
+            if (accessor.mData && accessor.mData->mGameDataFile) {
+            accessor.mData->mGameDataFile->setKidsMode(true);
+            }
+
+        } else {
+            mModeLayout->showSeeking();
+
+            if (accessor.mData && accessor.mData->mGameDataFile) {
+            accessor.mData->mGameDataFile->setKidsMode(false);
+            }
+            
+        }
+
+        Client::sendTagInfPacket();
     }
 
     mInfo->mHidingTime = mModeTimer->getTime();
-
-    // Switch roles - only if R is NOT being held
-    if (al::isPadTriggerUp(-1) && !al::isPadHoldZL(-1) && !al::isPadHoldR(-1)) {
-        updateTagState(isPlayerRunning());
-    }
-
-    //bool toggleComboPressed = al::isPadHoldR(-1) && al::isPadTriggerUp(-1);
-// if (toggleComboPressed) {
-//     if (!mTicket->mIsActive) {
-//         al::startCamera(mCurScene, mTicket, -1);
-//         al::requestStopCameraVerticalAbsorb(mCurScene);
-//     } else {
-//         al::endCamera(mCurScene, mTicket, 0, false);
-//         al::requestStopCameraVerticalAbsorb(mCurScene);
-//     }
-// }
-// 
-// if (mTicket->mIsActive) {
-//     updateSpectateCam(playerBase);
-// }
 }
 
-bool ManHuntMode::isPlayerInSafeZone(al::LiveActor* player) {
-    if (!player) return false;
+// Cap Damage
+
+bool ManHuntMode::handleCapAttack(al::HitSensor* sender, al::HitSensor* receiver, PuppetInfo* attackerInfo) {
+    if (!attackerInfo) {
+        Logger::log("ManHunt cap attack blocked: no attacker info\n");
+        return false;
+    }
+
+    if (mIsCapInvincible) {
+    Logger::log("Cap attack blocked: player invincible (KoopaCap)\n");
+    return false;
+}
+
+
+    // Get the attacking puppet's hunting status
+    bool attackerIsHunting = !attackerInfo->manhuntIsRunning(); // manhuntIsRunning returns true for hiders
+
+    // Find receiver info
+    al::LiveActor* receiverActor = nullptr;
+    bool receiverIsHunting = false;
+    bool receiverIsInHack = false;
+    const char* hackName = nullptr;
     
-    // Get the Odyssey (barrier source)
-    PlayerActorBase* playerBase = rs::getPlayerActor(mCurScene);
-    if (!playerBase) return false;
+    if (!findReceiverPlayerInfo(receiver, receiverActor, receiverIsHunting, receiverIsInHack, hackName)) {
+        Logger::log("ManHunt cap attack blocked: couldn't identify receiver as player\n");
+        return false;
+    }
+
+    // Tank immunity check
+    if (receiverIsInHack && hackName && strcmp(hackName, "Tank") == 0) {
+        Logger::log("ManHunt cap attack blocked: Tank immunity\n");
+        return false;
+    }
+
+    // Safe zone check
+    if (!checkSafeZone(attackerInfo->playerPos, receiverActor, attackerIsHunting, receiverIsHunting)) {
+        return false;
+    }
+
+    // Only allow damage if players are on different teams
+    if (attackerIsHunting != receiverIsHunting) {
+        performAttack(sender, receiver, receiverActor, receiverIsInHack);
+        
+        Logger::log("ManHunt cap hit: %s hit %s%s\n", 
+                   attackerIsHunting ? "Hunter" : "Hider",
+                   receiverIsHunting ? "Hunter" : "Hider",
+                   receiverIsInHack ? " (in hack)" : "");
+        return true;
+    } else {
+        Logger::log("ManHunt cap hit blocked: same team (%s) cannot attack each other\n",
+                   attackerIsHunting ? "Hunters" : "Hiders");
+        return false;
+    }
+}
+
+bool ManHuntMode::isPlayerHuntingByInfo(PuppetInfo* puppetInfo) const {
+    return !puppetInfo->manhuntIsRunning(); // manhuntIsRunning returns true for hiders
+}
+
+bool ManHuntMode::findReceiverPlayerInfo(al::HitSensor* receiver, al::LiveActor*& receiverActor, 
+                                         bool& isHunting, bool& isInHack, const char*& hackName) {
+    receiverActor = al::getSensorHost(receiver);
+    isHunting = false;
+    isInHack = false;
+    hackName = nullptr;
+    
+    // Get current scene and local player
+    auto* curSeq = (HakoniwaSequence*) GameSystemFunction::getGameSystem()->mSequence;
+    if (!curSeq || !curSeq->curScene) return false;
+    
+    StageScene* stageScene = (StageScene*) curSeq->curScene;
+    al::PlayerHolder* pHolder = al::getScenePlayerHolder(stageScene);
+    PlayerActorBase* playerBase = al::tryGetPlayerActor(pHolder, 0);
+    auto* localPlayer = dynamic_cast<PlayerActorHakoniwa*>(playerBase);
+    
+    // Check if receiver is the local player (direct hit)
+    if (al::isSensorPlayer(receiver)) {
+        if (receiverActor == localPlayer) {
+            isHunting = mInfo->mIsPlayerHunting;
+            
+            // Check if player is in a hack
+            if (localPlayer && localPlayer->mHackKeeper && localPlayer->mHackKeeper->currentHackActor) {
+                isInHack = true;
+                hackName = localPlayer->mHackKeeper->getCurrentHackName();
+            }
+            return true;
+        }
+    }
+    
+    // Check if receiver is a hacked actor controlled by local player
+    if (!al::isSensorPlayer(receiver)) {
+        if (localPlayer && localPlayer->mHackKeeper && localPlayer->mHackKeeper->currentHackActor) {
+            if (localPlayer->mHackKeeper->currentHackActor == receiverActor) {
+                isHunting = mInfo->mIsPlayerHunting;
+                isInHack = true;
+                hackName = localPlayer->mHackKeeper->getCurrentHackName();
+                return true;
+            }
+        }
+    }
+    
+    // Check puppet players
+    if (mPuppetHolder) {
+        for (size_t i = 0; i < (size_t)mPuppetHolder->getSize(); i++) {
+            PuppetInfo* puppetInfo = Client::getPuppetInfo(i);
+            if (!puppetInfo || !puppetInfo->isConnected || !puppetInfo->isInSameStage) {
+                continue;
+            }
+            
+            PuppetActor* puppetActor = mPuppetHolder->getPuppetActor(i);
+            
+            // Check normal puppet actor (direct hit)
+            if (al::isSensorPlayer(receiver) && puppetActor && puppetActor == receiverActor) {
+                isHunting = isPlayerHuntingByInfo(puppetInfo);
+                return true;
+            }
+            
+            // Check if receiver is a hacked actor controlled by this puppet
+            if (!al::isSensorPlayer(receiver)) {
+                // Simplified approach - check if puppet is close to the receiver actor
+                // You may need to enhance PuppetInfo to track hack state properly
+                if (puppetActor && al::calcDistance(puppetActor, receiverActor) < 200.0f) {
+                    isHunting = isPlayerHuntingByInfo(puppetInfo);
+                    isInHack = true;
+                    // Note: hackName remains nullptr as we don't have puppet hack info
+                    return true;
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
+bool ManHuntMode::checkSafeZone(const sead::Vector3f& attackerPos, al::LiveActor* receiverActor, 
+                                bool attackerIsHunting, bool receiverIsHunting) {
+    // Get Odyssey position for safe zone checking
+    al::PlayerHolder* pHolder = al::getScenePlayerHolder(mCurScene);
+    PlayerActorBase* playerBase = al::tryGetPlayerActor(pHolder, 0);
+    if (!playerBase) return true; // If no player, allow attack
     
     ShineTowerRocket* odyssey = rs::tryGetShineTowerRocketFromDemoDirector((al::LiveActor*)playerBase);
-    if (!odyssey) return false;
+    if (!odyssey) return true; // If no Odyssey, allow attack
     
-    // Check distance to Odyssey barrier (same distance used for barrier effect)
-    f32 distance = al::calcDistanceH(player, (al::LiveActor*)odyssey);
-    return distance < 2045.0f; // Same distance as in your update() method
+    sead::Vector3f odysseyPos = al::getTrans((al::LiveActor*)odyssey);
+    const f32 safeZoneDistance = 2045.0f;
+
+    // Check if attacker is in safe zone (only hiders get protection)
+    bool attackerInSafeZone = false;
+    if (!attackerIsHunting) {
+        // Horizontal distance only (ignore Y)
+        f32 dx = attackerPos.x - odysseyPos.x;
+        f32 dz = attackerPos.z - odysseyPos.z;
+        f32 attackerDistance = std::sqrt(dx*dx + dz*dz);
+        attackerInSafeZone = (attackerDistance < safeZoneDistance);
+    }
+
+    // Check if receiver is in safe zone (only hiders get protection)
+    bool receiverInSafeZone = false;
+    if (!receiverIsHunting) {
+        f32 receiverDistance = al::calcDistanceH(receiverActor, (al::LiveActor*)odyssey);
+        receiverInSafeZone = (receiverDistance < safeZoneDistance);
+    }
+
+    // Block attack if either player is a hider in the safe zone
+    if (attackerInSafeZone || receiverInSafeZone) {
+        Logger::log("ManHunt cap attack blocked: %s in safe zone\n", 
+                   attackerInSafeZone ? "Attacker" : "Receiver");
+        return false;
+    }
+    
+    return true;
 }
 
-void ManHuntMode::updateTagState(bool isHunting) {
-    mInfo->mIsPlayerIt = isHunting;
 
-    if (isHunting) {
-        mModeTimer->disableTimer();
-        mModeLayout->showSeeking();
+void ManHuntMode::performAttack(al::HitSensor* sender, al::HitSensor* receiver, 
+                                al::LiveActor* receiverActor, bool receiverIsInHack) {
+    // For hack actors, damage both the hack actor and the controlling player
+    if (receiverIsInHack && !al::isSensorPlayer(receiver)) {
+        // Damage the hack actor
+        al::sendMsgEnemyAttack(receiver, sender);
         
-        // Seeker: disable Kids Mode
-        GameDataHolderAccessor accessor(this);
-        if (accessor.mData && accessor.mData->mGameDataFile) {
-            accessor.mData->mGameDataFile->setKidsMode(false);
+        // Also damage the controlling player (local player only for now)
+        al::PlayerHolder* pHolder = al::getScenePlayerHolder(mCurScene);
+        PlayerActorBase* playerBase = al::tryGetPlayerActor(pHolder, 0);
+        auto* localPlayer = dynamic_cast<PlayerActorHakoniwa*>(playerBase);
+        
+        if (localPlayer && localPlayer->mHackKeeper && 
+            localPlayer->mHackKeeper->currentHackActor == receiverActor) {
+            al::HitSensor* playerSensor = al::getHitSensor(localPlayer, "Body");
+            if (playerSensor) {
+                al::sendMsgEnemyAttack(playerSensor, sender);
+            }
         }
     } else {
-        mModeTimer->enableTimer();
-        mModeLayout->showHiding();
-        mInvulnTime = 0;
-        
-        // Hider: enable Kids Mode
-        GameDataHolderAccessor accessor(this);
-        if (accessor.mData && accessor.mData->mGameDataFile) {
-            accessor.mData->mGameDataFile->setKidsMode(true);
+        // Direct player hit
+        al::sendMsgEnemyAttack(receiver, sender);
+    }
+}
+
+// Hooks
+
+void stageSceneHook() {
+    StageScene *stageScene;
+    __asm("MOV %[result], X0" : [result] "=r"(stageScene));
+    isInGame = true;
+
+    auto *pHolder = al::getScenePlayerHolder(stageScene);
+    auto *player = (PlayerActorHakoniwa*)al::tryGetPlayerActor(pHolder, 0);
+    PlayerActorBase*  playerBase = al::tryGetPlayerActor(pHolder, 0);
+    if (!player) return;
+
+    GameDataHolderWriter writer(stageScene->mHolder);
+    GameDataFunction::enableCap(writer);
+    GameDataFunction::talkCapNearHomeInWaterfall(player);
+
+    if (!GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT)) {
+        ShineTowerRocket* odyssey = rs::tryGetShineTowerRocketFromDemoDirector((al::LiveActor*)playerBase);
+        if (odyssey) {
+            al::tryDeleteEffect((al::LiveActor*)odyssey, "Special1WorldHomeGKBarrier");
         }
     }
 
-    Client::sendGamemodePacket();
+
+}
+
+// ManHunt bool and stuff
+
+namespace al {
+    bool trySyncStageSwitchAppearAndKill(LiveActor*);
+    const char* getModelName(const LiveActor* actor);
+    void startNerveAction(LiveActor*, const char*);
+}
+
+void barrierAppearHook(al::LiveActor* thisPtr, const char* actionName) {
+    if (!GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT)) {
+        return; // Disable functionality if not in MANHUNT mode
+    }
+
+    if (al::isEqualString(GameDataFunction::getCurrentStageName(thisPtr), "SkyWorldHomeStage") && 
+        al::calcDistanceH(thisPtr, sead::Vector3f{5722.f, 29000.f, -41583.f}) < 200) {
+        // thisPtr->kill();
+        al::startNerveAction(thisPtr, "Disappear");
+    } else {
+        al::startNerveAction(thisPtr, actionName);
+    }
+}
+
+
+bool compassAlwaysVisible(GameDataHolderAccessor accessor) {
+    return GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT);
 }

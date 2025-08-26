@@ -1,4 +1,5 @@
 #include "actors/PuppetCapActor.h"
+#include "game/StageScene/StageSceneStateServerConfig.hpp"
 #include "al/sensor/HitSensor.h"
 #include "al/util.hpp"
 #include "al/util/MathUtil.h"
@@ -8,19 +9,14 @@
 #include "al/util/SensorUtil.h"
 #include "server/gamemode/GameModeManager.hpp"
 #include "server/gamemode/GameModeBase.hpp"
-
 #include "server/manhunt/ManHuntMode.hpp"
-#include "server/Client.hpp"
+
 #include "game/HakoniwaSequence/HakoniwaSequence.h"
 #include "game/System/GameSystem.h"
-#include "server/DeltaTime.hpp"
+#include "al/util/DemoUtil.h"
+#include "server/Client.hpp"
 
-#include "server/manhunt/CapDamageHandler.h"
-
-PuppetCapActor::PuppetCapActor(const char* name) : al::LiveActor(name) {
-    mIsInvincible = false;
-    mInvincibleTimer = 0.0f;
-}
+PuppetCapActor::PuppetCapActor(const char *name) : al::LiveActor(name) {}
 
 void PuppetCapActor::init(al::ActorInitInfo const &initInfo) {
 
@@ -66,36 +62,6 @@ void PuppetCapActor::control() {
         startAction(mInfo->capAnim);
     }
 
-    auto* curSeq = (HakoniwaSequence*) GameSystemFunction::getGameSystem()->mSequence;
-    if (!curSeq || !curSeq->curScene) return;
-    StageScene* stageScene = (StageScene*) curSeq->curScene;
-    ManHuntMode* hnsMode = GameModeManager::instance()->getMode<ManHuntMode>();
-
-    al::PlayerHolder* pHolder = al::getScenePlayerHolder(stageScene);
-    PlayerActorBase* playerBase = al::tryGetPlayerActor(pHolder, 0);
-    auto* player = dynamic_cast<PlayerActorHakoniwa*>(playerBase);
-    if (!player) return;
-
-    // Invincibility logic for animations
-    if (player->mPlayerAnimator->isAnim("CatchKoopaCap")) {
-        mIsInvincible = true;
-        mInvincibleTimer = 0.0f;
-    } 
-    else if (player->mPlayerAnimator->isAnim("KoopaCapPunchFinishL") ||
-             player->mPlayerAnimator->isAnim("KoopaCapPunchFinishR")) 
-    {
-        if (mIsInvincible && mInvincibleTimer <= 0.0f) {
-            mInvincibleTimer = 0.85f;
-        }
-    } 
-    else if (mInvincibleTimer > 0.0f) {
-        mInvincibleTimer -= Time::deltaTime;
-        if (mInvincibleTimer <= 0.0f) {
-            mIsInvincible = false;
-            mInvincibleTimer = 0.0f;
-        }
-    }
-
     sead::Vector3f *cPos = al::getTransPtr(this);
 
     if(*cPos != mInfo->capPos) 
@@ -115,23 +81,41 @@ void PuppetCapActor::update() {
 }
 
 void PuppetCapActor::attackSensor(al::HitSensor* sender, al::HitSensor* receiver) {
-    // Handle push interactions
-    if (al::isSensorPlayer(receiver) && al::isSensorName(sender, "Push")) {
-        rs::sendMsgPushToPlayer(receiver, sender);
+    
+    if (al::isSensorName(sender, "Attack")) {
+        // Check if we're in ManHunt mode
+        if (!GameModeManager::instance()->isModeAndActive(GameMode::MANHUNT)) {
+            return;
+        }
+
+        // Get the ManHunt mode instance
+        ManHuntMode* manhuntMode = GameModeManager::instance()->getMode<ManHuntMode>();
+        if (!manhuntMode || !mInfo) {
+            return;
+        }
+
+        // Delegate all ManHunt cap attack logic to ManHuntMode
+        manhuntMode->handleCapAttack(sender, receiver, mInfo);
         return;
     }
 
-    // Handle cap damage
-    CapDamageHandler::handleCapDamage(sender, receiver, mInfo, mIsInvincible);
+    // Handle non-attack sensors (Push sensor logic remains the same)
+    if (!StageSceneStateServerConfig::isCapAttackEnabled()) {
+        return;
+    }
+    
+    if (al::isSensorPlayer(receiver) && al::isSensorName(sender, "Push")) {
+        rs::sendMsgPushToPlayer(receiver, sender);
+    }
 }
 
 bool PuppetCapActor::receiveMsg(const al::SensorMsg* msg, al::HitSensor* sender,
                              al::HitSensor* receiver) {
-
-    // try to use gamemode recieve logic, otherwise fallback to default behavior
-    if (GameModeManager::tryReceiveCapMsg(msg, sender, receiver)) {
-        return true;
+                                
+    if (!StageSceneStateServerConfig::isCapReceiveEnabled()) {
+        return false;
     }
+
 
     if (al::isMsgPlayerDisregard(msg)) {
         return true;

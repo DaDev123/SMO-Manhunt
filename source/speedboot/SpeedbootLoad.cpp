@@ -18,9 +18,17 @@ namespace {
     NERVE_HEADER(SpeedbootLoad, End)
 }
 
-SpeedbootLoad::SpeedbootLoad(WorldResourceLoader* resourceLoader, const al::LayoutInitInfo& initInfo)
-    : al::LayoutActor("SpeedbootLoad"), worldResourceLoader(resourceLoader) {
+SpeedbootLoad::SpeedbootLoad(
+        WorldResourceLoader* resourceLoader,
+        const al::LayoutInitInfo& initInfo,
+        float autoCloseAfter
+    )
+    : al::LayoutActor("SpeedbootLoad"), worldResourceLoader(resourceLoader), mBlackFadeTimer(0.0f), mShouldStartFade(false) {
     al::initLayoutActor(this, initInfo, "SpeedbootLoad", nullptr);
+    
+    // Initialize blackPNG as fully transparent
+    al::setPaneLocalAlpha(this, "blackPNG", 0.0f);
+    
     initNerve(&nrvSpeedbootLoadAppear, 0);
     appear();
 }
@@ -39,8 +47,12 @@ void SpeedbootLoad::exeWait() {
 
 void SpeedbootLoad::exeDecrease() {
     al::setPaneString(this, "TxtTip", u"Change Server IP/Port: Press +", 0);
-    al::setPaneString(this, "TxtName", u"ManHunt", 0);
-
+    #if EMU
+    al::setPaneString(this, "TxtName", u"SMOO-Plus for Emulator", 0);
+    #else
+    al::setPaneString(this, "TxtName", u"SMOO-Plus for Switch", 0);
+    #endif
+    
     if (al::isPadTriggerPlus(-1)) {
         Logger::log("Plus button pressed. Opening keyboard for IP and Port input.\n");
 
@@ -54,15 +66,18 @@ void SpeedbootLoad::exeDecrease() {
             Client::openKeyboardPort();
 
             SaveDataAccessFunction::startSaveDataWrite(client->getHolder().mData);
-            client->restartConnection();
 
             mHasConnected = true;
-            mConnectionDisplayTimer = 0.0f;
+            mConnectionDisplayTimer = 5.0f;
 
             al::setPaneLocalAlpha(this, "ConnectingGlobe", 1.0f);
             al::setPaneLocalAlpha(this, "ConnectingArrows", 1.0f);
             al::setPaneVtxColor(this, "TxtConnecting", sead::Color4u8{255, 255, 255, 255});
-            al::setPaneString(this, "TxtConnecting", u"Restarted Connection!", 0);
+            
+            // Make the text bigger and center it on screen
+            al::setPaneLocalScale(this, "TxtConnecting", sead::Vector2f{1.5f, 1.5f}); // 1.5x bigger
+            al::setPaneLocalTrans(this, "TxtConnecting", sead::Vector3f{0.0f, 0.0f, 0.0f}); // Center position
+            al::setPaneString(this, "TxtConnecting", u"You changed the server and have to restart the game now.", 0);
         }
     }
 
@@ -77,6 +92,30 @@ void SpeedbootLoad::exeDecrease() {
 
     float arrowRotation = -mRotTime * 75.0f;
     al::setPaneLocalRotate(this, "ConnectingArrows", { 0.0f, 0.0f, arrowRotation });
+
+    // --- Black fade-in effect (starts 2 seconds before completion) ---
+    // Start fade when we're very close to completion (95% or higher)
+    if (mProgression >= 0.95f && !mShouldStartFade) {
+        mShouldStartFade = true;
+        mBlackFadeTimer = 0.0f;
+        Logger::log("Starting black fade-in effect\n");
+    }
+    
+    // Handle the fade-in over 2 seconds
+    if (mShouldStartFade) {
+        mBlackFadeTimer += 1.0f / 60.0f; // Assuming 60 FPS
+        float fadeProgress = mBlackFadeTimer / 2.0f; // 2 second fade
+        fadeProgress = sead::Mathf::clamp(fadeProgress, 0.0f, 1.0f);
+        
+        // Smooth fade curve (ease-in)
+        float smoothedFade = fadeProgress * fadeProgress;
+        al::setPaneLocalAlpha(this, "blackPNG", smoothedFade);
+        
+        // Debug output
+        if ((int)(mBlackFadeTimer * 10) % 10 == 0) { // Log every 0.1 seconds
+            Logger::log("Black fade progress: %.2f, alpha: %.2f\n", fadeProgress, smoothedFade);
+        }
+    }
 
     // --- Connection status display ---
     if (!mHasConnected) {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdint.h>
 #include "algorithms/PlayerAnims.h"
 #include "packets/Packet.h"
 
@@ -46,10 +45,14 @@ struct PuppetInfo {
     bool isHoldThrow = false;
     // Hide and Seek Gamemode Info
     bool isIt = false;
+        inline bool manhuntIsHunting() const { return  isIt; }
+    inline bool manhuntIsRunning()  const { return !isIt; }
     u8 seconds = 0;
     u16 minutes = 0;
-
-    // ManHunt
-    inline bool manhuntIsHunting() const { return  isIt; }
-    inline bool manhuntIsRunning()  const { return !isIt; }
+    // Freeze Tag Gamemode Info
+    uint16_t freezeTagScore = 0;
+    bool isFreezeTagRunner = true;
+    bool isFreezeTagFreeze = false;
+    bool isFreezeTagFallenOff = false; // When runenr falls off and is automatically frozen, this flag is set
+    float freezeIconSize = 0.f;
 };

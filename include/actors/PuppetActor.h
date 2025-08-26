@@ -24,7 +24,6 @@
 #include "helpers.hpp"
 #include "algorithms/CaptureTypes.h"
 
-
 class PuppetActor : public al::LiveActor {
     public:
         PuppetActor(const char *name);
@@ -70,8 +69,6 @@ class PuppetActor : public al::LiveActor {
 
         void emitJoinEffect();
 
-        void debugThrowCap();
-
         bool mIsDebug = false;
         
     private:
@@ -95,7 +92,6 @@ class PuppetActor : public al::LiveActor {
         bool mIsCaptureModel = false;
 
         float mClosingSpeed = 0;
-
 };
 
 PlayerCostumeInfo* initMarioModelPuppet(al::LiveActor* player, const al::ActorInitInfo& initInfo,

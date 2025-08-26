@@ -6,7 +6,6 @@
 #include "al/util/NerveUtil.h"
 #include "logger.hpp"
 #include "sead/math/seadVector.h"
-#include "server/gamemode/GameModeManager.hpp"
 
 NameTag::NameTag(PuppetActor* pupActor, const al::LayoutInitInfo& initInfo, float startDist,
                  float endDist, const char *playerName)
@@ -72,8 +71,9 @@ void NameTag::updateTrans() {
 
     al::setLocalTrans(this, newTrans);
 
-    mNormalizedDist = 1 - al::normalize(al::calcDistance(puppetModel, al::getPlayerActor(puppetModel, 0)), 200.0f, mEndDist);
-
+    mNormalizedDist =
+        1 - al::normalize(al::calcDistance(puppetModel, al::getPlayerActor(puppetModel, 0)), 200.0f,
+                          mEndDist);
 
     al::setLocalScale(this, mNormalizedDist);
     
@@ -106,7 +106,6 @@ void NameTag::setText(const char* text) {
 }
 
 bool NameTag::isNearPlayerActor(float dist) const {
-    
     return al::isNearPlayer(mPuppet->getCurrentModel(), dist);
 }
 

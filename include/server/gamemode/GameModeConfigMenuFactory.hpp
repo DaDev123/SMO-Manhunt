@@ -12,7 +12,7 @@ GameModeConfigMenu* createGameModeConfigMenu(const char* name) {
 };
 
 __attribute((used)) constexpr al::NameToCreator<createMenu> menuTable[] = {
-    {"ManHunt", &createGameModeConfigMenu<ManHuntConfigMenu>}
+    {"ManHunt", &createGameModeConfigMenu<ManHuntConfigMenu>},
 };
 
 class GameModeConfigMenuFactory : public al::Factory<createMenu> {

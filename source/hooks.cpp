@@ -41,7 +41,7 @@ void saveWriteHook(al::ByamlWriter* saveByml) {
     if (serverIP) {
         saveByml->addString("ServerIP", serverIP);
     } else {
-        saveByml->addString("ServerIP", "176.189.251.231");
+        saveByml->addString("ServerIP", "127.0.0.1");
     }
 
     if (serverPort) {
@@ -113,30 +113,25 @@ void initNerveStateHook(StageSceneStatePauseMenu* stateParent, StageSceneStateOp
     al::initNerveState(stateParent, sceneStateServerConfig, &nrvStageSceneStatePauseMenuServerConfig, "CustomNerveOverride");
 }
 
-// skips starting both coin counters (disabled in hide and seek mode)
+// skips starting both coin counters
 void startCounterHook(CoinCounter* thisPtr) {
-    if (!GameModeManager::instance()->isActive() || 
-        GameModeManager::instance()->isMode(GameMode::MANHUNT)) {
+    if (!GameModeManager::instance()->isModeRequireUI()) {
         thisPtr->tryStart();
     }
 }
 
 // Simple hook that can be used to override isModeE3 checks to enable/disable certain behaviors
-// Returns false when hide and seek mode is active to disable the override
 bool modeE3Hook() {
-    if (GameModeManager::instance()->isMode(GameMode::MANHUNT)) {
-        return false;
-    }
-    return GameModeManager::instance()->isActive();
+    return GameModeManager::instance()->isModeRequireUI();
 }
 
-// Skips ending the play guide layout if a mode is active, but allows it in hide and seek mode
+// Skips ending the play guide layout if a mode is active, since the mode would have already ended it
 void playGuideEndHook(al::SimpleLayoutAppearWaitEnd* thisPtr) {
-    if (!GameModeManager::instance()->isActive() || 
-        GameModeManager::instance()->isMode(GameMode::MANHUNT)) {
+    if (!GameModeManager::instance()->isModeRequireUI()) {
         thisPtr->end();
     }
 }
+
 
 // Gravity Hooks
 
