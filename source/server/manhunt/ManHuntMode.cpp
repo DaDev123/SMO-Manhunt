@@ -180,7 +180,11 @@ if (mCapInvulnTimer > 0.0f) {
         } else {
             al::tryDeleteEffect((al::LiveActor*)odyssey, "Special1WorldHomeGKBarrier");
         }
+
+        al::invalidateClipping((al::LiveActor*)odyssey);
     }
+
+
 
     if (mInfo->mIsUseGravity && !isYukimaru) {
         sead::Vector3f gravity;

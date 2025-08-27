@@ -46,28 +46,28 @@ starlight_patch_$(SMOVER)/*.ips: patches/*.slpatch patches/configs/$(SMOVER).con
 	@rm -f starlight_patch_$(SMOVER)/*.ips
 	python3 scripts/genPatch.py $(SMOVER) $(BUILD_DIR)
 
-# builds project with the file structure for SMOO-Emulator
+# builds project with the file structure for ManHunt-Emulator
 emu:
 	$(MAKE) all -f MakefileNSO SMOVER=$(SMOVER) BUILD=build$(SMOVER)EMU BUILDVERSTR=$(BUILDVERSTR) BUILDVER=$(BUILDVER) DEBUGLOG=$(DEBUGLOG) SERVERIP=${SERVERIP} EMU=1
 	$(MAKE) starlight_patch_$(SMOVER)/*.ips ISEMU=1
 
-	@echo "Creating SMOO-Emulator folder structure inside starlight_patch_$(SMOVER)..."
-	mkdir -p starlight_patch_$(SMOVER)/SMOO-Emulator/exefs/
-	mkdir -p starlight_patch_$(SMOVER)/SMOO-Emulator/romfs/
+	@echo "Creating ManHunt-Emulator folder structure inside starlight_patch_$(SMOVER)..."
+	mkdir -p starlight_patch_$(SMOVER)/ManHunt-Emulator/exefs/
+	mkdir -p starlight_patch_$(SMOVER)/ManHunt-Emulator/romfs/
 
 	# Move .ips file to exefs folder
-	mv starlight_patch_$(SMOVER)/3CA12DFAAF9C82DA064D1698DF79CDA1.ips starlight_patch_$(SMOVER)/SMOO-Emulator/exefs/3CA12DFAAF9C82DA064D1698DF79CDA1.ips
+	mv starlight_patch_$(SMOVER)/3CA12DFAAF9C82DA064D1698DF79CDA1.ips starlight_patch_$(SMOVER)/ManHunt-Emulator/exefs/3CA12DFAAF9C82DA064D1698DF79CDA1.ips
 	
 	# Move subsdk1 (nso file) to exefs folder
-	mv $(shell basename $(CURDIR))$(SMOVER).nso starlight_patch_$(SMOVER)/SMOO-Emulator/exefs/subsdk1
+	mv $(shell basename $(CURDIR))$(SMOVER).nso starlight_patch_$(SMOVER)/ManHunt-Emulator/exefs/subsdk1
 	
 	# Copy romfs folder contents
-	cp -R romfs/* starlight_patch_$(SMOVER)/SMOO-Emulator/romfs/ 2>/dev/null || true
+	cp -R romfs/* starlight_patch_$(SMOVER)/ManHunt-Emulator/romfs/ 2>/dev/null || true
 	
 	# Clean up temporary files
 	rm -f $(shell basename $(CURDIR))$(SMOVER).elf
 	
-	@echo "SMOO-Emulator folder created successfully inside starlight_patch_$(SMOVER)!"
+	@echo "ManHunt-Emulator folder created successfully inside starlight_patch_$(SMOVER)!"
 
 # builds and sends project to FTP server hosted on provided IP
 send: all

@@ -48,9 +48,9 @@ void SpeedbootLoad::exeWait() {
 void SpeedbootLoad::exeDecrease() {
     al::setPaneString(this, "TxtTip", u"Change Server IP/Port: Press +", 0);
     #if EMU
-    al::setPaneString(this, "TxtName", u"SMOO-Plus for Emulator", 0);
+    al::setPaneString(this, "TxtName", u"ManHunt for Emulator", 0);
     #else
-    al::setPaneString(this, "TxtName", u"SMOO-Plus for Switch", 0);
+    al::setPaneString(this, "TxtName", u"ManHunt for Switch", 0);
     #endif
     
     if (al::isPadTriggerPlus(-1)) {

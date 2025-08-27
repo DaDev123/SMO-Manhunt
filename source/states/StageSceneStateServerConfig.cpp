@@ -24,8 +24,8 @@
 #include "server/gamemode/GameModeFactory.hpp"
 #include "server/gamemode/GameModeManager.hpp"
 
-bool StageSceneStateServerConfig::sCapAttackEnabled = false;
-bool StageSceneStateServerConfig::sCapReceiveEnabled = false;
+bool StageSceneStateServerConfig::sCapAttackEnabled = true;
+bool StageSceneStateServerConfig::sCapReceiveEnabled = true;
 bool StageSceneStateServerConfig::sPuppetAttackEnabled = true;
 bool StageSceneStateServerConfig::sPuppetReceiveEnabled = true;
 

@@ -186,9 +186,9 @@ if (clientHeap) {
     );
 
 #if EMU
-    gTextWriter->printf("Mod version: %s for Emulators\n", TOSTRING(BUILDVERSTR));
+    gTextWriter->printf("Mod version: 1.3.0 for Emulators\n", TOSTRING(BUILDVERSTR));
 #else
-    gTextWriter->printf("Mod version: %s for Switch\n", TOSTRING(BUILDVERSTR));
+    gTextWriter->printf("Mod version: 1.3.0 for Switch\n", TOSTRING(BUILDVERSTR));
 #endif
 
     // Only show detailed debug info for authorized users
