@@ -12,12 +12,12 @@ RUN apt-get update \
   && pip install keystone-engine \
 ;
 
-# install devkitPro using official installer (non-interactive)
-RUN DEBIAN_FRONTEND=noninteractive \
-    wget https://apt.devkitpro.org/install-devkitpro-pacman \
- && chmod +x install-devkitpro-pacman \
- && ./install-devkitpro-pacman -y \
- && dkp-pacman --noconfirm -S switch-dev \
+# add devkitPro repo + install pacman + switch toolchain
+RUN curl -fsSL https://apt.devkitpro.org/devkitpro-pub.gpg -o /usr/share/keyrings/devkitpro-pub.gpg \
+  && echo "deb [signed-by=/usr/share/keyrings/devkitpro-pub.gpg] https://apt.devkitpro.org stable main" > /etc/apt/sources.list.d/devkitpro.list \
+  && apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y devkitpro-pacman \
+  && dkp-pacman --noconfirm -S switch-dev \
 ;
 
 WORKDIR /app/
