@@ -12,14 +12,16 @@ RUN apt-get update \
   && pip install keystone-engine \
 ;
 
-# install devkitPro using official installer
-RUN wget https://apt.devkitpro.org/install-devkitpro-pacman \
-  && chmod +x install-devkitpro-pacman \
-  && ./install-devkitpro-pacman \
-  && dkp-pacman --noconfirm -S switch-dev \
+# install devkitPro using official installer (non-interactive)
+RUN DEBIAN_FRONTEND=noninteractive \
+    wget https://apt.devkitpro.org/install-devkitpro-pacman \
+ && chmod +x install-devkitpro-pacman \
+ && ./install-devkitpro-pacman -y \
+ && dkp-pacman --noconfirm -S switch-dev \
 ;
 
 WORKDIR /app/
 
-ENV DEVKITPRO /opt/devkitpro
+ENV DEVKITPRO=/opt/devkitpro
+
 ENTRYPOINT ["make"]
